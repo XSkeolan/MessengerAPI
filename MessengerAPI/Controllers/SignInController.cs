@@ -19,38 +19,49 @@ namespace MessengerAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> Sign(string phoneNumber, string password)
         {
-            if (phoneNumber == null || password == null)
-                return BadRequest("Some field are filled in");
-            Guid guid;
+            Guid sessionGuid;
+
             using (var connection = new NpgsqlConnection(_configuration["ConnectionStrings:MessengerAPI"]))
             {
                 connection.Open();
+
                 Guid user;
+
                 using(var command = connection.CreateCommand())
                 {
-                    command.CommandText = $"SELECT id, phonenumber, password FROM Users WHERE PhoneNumber='{phoneNumber}'";
-                    NpgsqlDataReader reader = await command.ExecuteReaderAsync();
-                    if(!reader.HasRows)
-                        return BadRequest("Phone number not found! Register in message");
-                    else
+                    command.CommandText = "SELECT id, password FROM Users WHERE PhoneNumber=@phonenumber";
+                    command.Parameters.Add(new NpgsqlParameter<string>("@phonenumber", phoneNumber));
+
+                    using (var reader = await command.ExecuteReaderAsync())
                     {
-                        reader.Read();
-                        user = (Guid)reader[0];
-                        Console.WriteLine((string)reader[0], (string)reader[1], (string)reader[2]);
-                        
-                        if ((string)reader[2] != password)
-                            return BadRequest("Password is not correct");
+                        if (!reader.HasRows)
+                            return BadRequest("Phone number not found! Register in messager");
+                        else
+                        {
+                            reader.Read();
+                            user = (Guid)reader[0];
+                            if ((string)reader[1] != password)
+                                return BadRequest("Password is not correct");
+                        }
                     }
                 }
+
                 using(var command = connection.CreateCommand())
                 {
-                    guid = Guid.NewGuid();
-                    command.CommandText = $"INSERT INTO Session VALUES({guid}, {DateTime.Now}, {user}, {Request.Headers.UserAgent})";
-                    command.ExecuteNonQuery();
+                    sessionGuid = Guid.NewGuid();
+
+                    command.CommandText = "INSERT INTO Sessions VALUES(@id, @datetime, @userId, @device)";
+                    command.Parameters.Add(new NpgsqlParameter<Guid>("@id", sessionGuid));
+                    command.Parameters.Add(new NpgsqlParameter<DateTime>("@datetime", DateTime.Now));
+                    command.Parameters.Add(new NpgsqlParameter<Guid>("@userId", user));
+                    command.Parameters.Add(new NpgsqlParameter<string>(@"device", Request.Headers.UserAgent));
+
+                    await command.ExecuteNonQueryAsync();
                 }
+
                 connection.Close();
             }
-            return Ok(guid);
+            return Ok(sessionGuid);
         }
     }
 }
