@@ -1,35 +1,35 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Npgsql;
 using System.Net;
 using System.Net.Mail;
-using Npgsql;
 using System.Text.RegularExpressions;
 
 namespace MessengerAPI.Controllers
 {
-    [Route("api/sendCode")]
+    [Route("api/resendCode")]
     [ApiController]
-    public class SendCodeController : ControllerBase
+    public class ResendCodeController : ControllerBase
     {
         private readonly IConfiguration _configuration;
-        public SendCodeController(IConfiguration configuration)
+        public ResendCodeController(IConfiguration configuration)
         {
             _configuration = configuration;
         }
 
         [HttpPost]
-        public async Task<IActionResult> SendCode(string email)
+        public async Task<IActionResult> ResendCode(string email)
         {
-            if(!Regex.IsMatch(email, "\\w+([\\.-]?\\w+)*@\\w+([\\.-]?\\w+)*\\.\\w{2,4}"))
+            if (!Regex.IsMatch(email, "\\w+([\\.-]?\\w+)*@\\w+([\\.-]?\\w+)*\\.\\w{2,4}"))
                 return BadRequest("Input parameter is not email");
 
             using (var connection = new NpgsqlConnection(_configuration["ConnectionStrings:MessengerAPI"]))
             {
                 connection.Open();
 
-                string code = string.Empty;
                 Guid userId;
-                long count;
+                Guid codeId;
+                string code = string.Empty;
 
                 using (var command = connection.CreateCommand())
                 {
@@ -37,12 +37,12 @@ namespace MessengerAPI.Controllers
 
                     command.Parameters.Add(new NpgsqlParameter<string>("@email", email));
 
-                    using(var reader = await command.ExecuteReaderAsync())
+                    using (var reader = await command.ExecuteReaderAsync())
                     {
-                        if(reader.HasRows)
+                        if (reader.HasRows)
                         {
                             reader.Read();
-                            if(!(bool)reader[1])
+                            if (!(bool)reader[1])
                             {
                                 return BadRequest("Email is not confirmed");
                             }
@@ -58,19 +58,25 @@ namespace MessengerAPI.Controllers
                     }
                 }
 
-                using(var command = connection.CreateCommand())
+                using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT Count(*) FROM confirmationcode WHERE userid=@userId and isused=@isUsed";
+                    command.CommandText = "SELECT id FROM confirmationcode WHERE userid=@userId and isused=@isUsed";
 
                     command.Parameters.Add(new NpgsqlParameter<Guid>("@userId", userId));
                     command.Parameters.Add(new NpgsqlParameter<bool>("@isUsed", false));
 
-                    count = (long)await command.ExecuteScalarAsync();
-                }
-
-                if(count!=0)
-                {
-                    return BadRequest("You do not used last code! If you want refresh code, use /resendCode api url");
+                    using(var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (reader.HasRows)
+                        {
+                            reader.Read();
+                            codeId = (Guid)reader[0];
+                        }
+                        else
+                        {
+                            return NoContent();
+                        }
+                    }
                 }
 
                 MailAddress from = new MailAddress(_configuration["EmailConfiguration:Email"], "Tom");
@@ -95,15 +101,13 @@ namespace MessengerAPI.Controllers
 
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "INSERT INTO confirmationcode(code, userId) VALUES(@code, @userId)";
+                    command.CommandText = "UPDATE confirmationcode SET code=@code WHERE id=@codeId";
 
                     command.Parameters.Add(new NpgsqlParameter<string>("@code", code));
-                    command.Parameters.Add(new NpgsqlParameter<Guid>("@userId", userId));
+                    command.Parameters.Add(new NpgsqlParameter<Guid>("@codeId", codeId));
 
                     await command.ExecuteNonQueryAsync();
                 }
-
-                connection.Close();
             }
             //information about code maybe
             return Ok();
