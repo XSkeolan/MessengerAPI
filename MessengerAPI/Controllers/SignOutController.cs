@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 
 namespace MessengerAPI.Controllers
@@ -24,7 +23,7 @@ namespace MessengerAPI.Controllers
 
             command.Parameters.Add(new NpgsqlParameter<DateTime>("@date", DateTime.Now));
             command.Parameters.Add(new NpgsqlParameter<Guid>("@sessionId", sessionId));
-            command.ExecuteNonQuery();
+
             if (await command.ExecuteNonQueryAsync() != 0)
                 return Ok();
             else
