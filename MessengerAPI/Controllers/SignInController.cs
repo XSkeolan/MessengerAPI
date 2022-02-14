@@ -61,6 +61,7 @@ namespace MessengerAPI.Controllers
 
                 connection.Close();
             }
+            // возможно лучше пользователя вернуть
             return Ok(sessionGuid);
         }
     }
