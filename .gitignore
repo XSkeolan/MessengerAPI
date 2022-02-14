@@ -363,4 +363,4 @@ MigrationBackup/
 FodyWeavers.xsd
 
 # Configuration files
-appsettings*.json
+MessengerAPI/appsettings*.json
