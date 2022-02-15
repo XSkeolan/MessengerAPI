@@ -11,7 +11,6 @@ namespace MessengerAPI.Controllers
     [ApiController]
     public class ResendCodeController : ControllerBase
     {
-        //NOT TESTED!!!
         private readonly IConfiguration _configuration;
         public ResendCodeController(IConfiguration configuration)
         {
