@@ -28,7 +28,7 @@ namespace MessengerAPI.Controllers
                 return BadRequest("Surname is very long");
             if (password.Length > 32 || password.Length<10)
                 return BadRequest("Password length must be from 10 to 32 chars");
-            // проверить формат телефона
+
             long count;
             User user;
 
@@ -41,7 +41,7 @@ namespace MessengerAPI.Controllers
                     command.CommandText = "SELECT count(*) FROM Users WHERE phonenumber=@phonenumber";
                     command.Parameters.Add(new NpgsqlParameter<string>("@phonenumber", phoneNumber));
 
-                    count = (long)await command.ExecuteScalarAsync();
+                    count = (long)(await command.ExecuteScalarAsync() ?? 0);
                 }
 
                 if (count > 0)
@@ -54,7 +54,7 @@ namespace MessengerAPI.Controllers
                     using (var command = connection.CreateCommand())
                     {
                         command.CommandText = "SELECT COUNT(*) FROM User";
-                        count = (long)await command.ExecuteScalarAsync();
+                        count = (long)(await command.ExecuteScalarAsync() ?? 0);
                         user.NickName = ("UnnamedUser" + count)[..20]; // можно рандомом заменить
                     }
                 }

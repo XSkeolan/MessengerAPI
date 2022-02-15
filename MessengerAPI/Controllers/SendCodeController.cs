@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using System.Net.Mail;
 using Npgsql;
@@ -10,7 +9,7 @@ namespace MessengerAPI.Controllers
     [Route("api/sendCode")]
     [ApiController]
     public class SendCodeController : ControllerBase
-    {
+    { 
         private readonly IConfiguration _configuration;
         public SendCodeController(IConfiguration configuration)
         {
@@ -65,12 +64,32 @@ namespace MessengerAPI.Controllers
                     command.Parameters.Add(new NpgsqlParameter<Guid>("@userId", userId));
                     command.Parameters.Add(new NpgsqlParameter<bool>("@isUsed", false));
 
-                    count = (long)await command.ExecuteScalarAsync();
+                    count = (long)(await command.ExecuteScalarAsync() ?? 0);
                 }
 
                 if(count!=0)
                 {
                     return BadRequest("You do not used last code! If you want refresh code, use /resendCode api url");
+                }
+
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = "SELECT count(*) FROM confirmationcode WHERE code=@code and isused=@isUsed";
+
+                    for (int i = 0; i < 6; i++)
+                        code += new Random().Next(0, 10).ToString();
+
+                    command.Parameters.Add(new NpgsqlParameter<string>("@code", code));
+                    command.Parameters.Add(new NpgsqlParameter<bool>("@isUsed", false));
+
+                    while ((long)(await command.ExecuteScalarAsync() ?? 0) != 0)
+                    {
+                        code = string.Empty;
+                        for (int i = 0; i < 6; i++)
+                            code += new Random().Next(0, 10).ToString();
+
+                        command.Parameters["@code"].Value = code;
+                    }
                 }
 
                 MailAddress from = new MailAddress(_configuration["EmailConfiguration:Email"], "Tom");

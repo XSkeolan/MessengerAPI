@@ -11,6 +11,7 @@ namespace MessengerAPI.Controllers
     [ApiController]
     public class ResendCodeController : ControllerBase
     {
+        //NOT TESTED!!!
         private readonly IConfiguration _configuration;
         public ResendCodeController(IConfiguration configuration)
         {
@@ -79,11 +80,28 @@ namespace MessengerAPI.Controllers
                     }
                 }
 
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = "SELECT count(*) FROM confirmationcode WHERE code=@code and isused=@isUsed";
+
+                    for (int i = 0; i < 6; i++)
+                        code += new Random().Next(0, 10).ToString();
+
+                    command.Parameters.Add(new NpgsqlParameter<string>("@code", code));
+                    command.Parameters.Add(new NpgsqlParameter<bool>("@isUsed", false));
+
+                    while((long)(await command.ExecuteScalarAsync() ?? 0) != 0)
+                    {
+                        code = string.Empty;
+                        for (int i = 0; i < 6; i++)
+                            code += new Random().Next(0, 10).ToString();
+
+                        command.Parameters["@code"].Value = code;
+                    }
+                }
+
                 MailAddress from = new MailAddress(_configuration["EmailConfiguration:Email"], "Tom");
                 MailAddress to = new MailAddress(email);
-
-                for (int i = 0; i < 6; i++)
-                    code += new Random().Next(0, 10).ToString();
 
                 MailMessage m = new MailMessage(from, to)
                 {
