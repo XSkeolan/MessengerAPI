@@ -1,6 +1,7 @@
 ﻿using MessengerAPI.Models;
-using MessengerAPI.Repos;
+using MessengerAPI.Repositories;
 using MessengerAPI.DTOs;
+using MessengerAPI.Interfaces;
 
 namespace MessengerAPI.Services
 {
@@ -8,35 +9,32 @@ namespace MessengerAPI.Services
     {
         private readonly IUserRepository _users;
         private readonly ISessionRepository _sessions;
+
         public SignUpService(IConfiguration configuration)
         {
             _users = new UserRepository(configuration.GetConnectionString("MessengerAPI"));
             _sessions = new SessionRepository(configuration.GetConnectionString("MessengerAPI"));
         }
-        public SignUpResponse SignUp(SignUpRequest inputUser, string device)
+
+        public async Task<SignUpResponseUserInfo> SignUp(User user, Session session)
         {
-            User user = _users.FindByPhonenumber(inputUser.Phonenumber) == null ? new User
-            {
-                Password = inputUser.Password,
-                Phonenumber = inputUser.Phonenumber,
-                Name = inputUser.Name,
-                Surname = inputUser.Surname,
-                Nickname = inputUser.Nickname
-            } : throw new ArgumentException("User with this phonenumber already exists");
-            _users.Create(user);
-            Session session = new Session { UserId = user.Id, DateStart = DateTime.Now, DeviceName = device };
-            _sessions.Create(session);
+            await _users.CreateAsync(user);
+
+            session.UserId = user.Id;
+            await _sessions.CreateAsync(session);
+
             UserResponse responseUser = new UserResponse
-            { 
-                Id = user.Id, 
-                Nickname=user.Nickname, 
-                Name= user.Name,
-                Surname= user.Surname,
+            {
+                Id = user.Id,
+                Nickname = user.Nickname,
+                Name = user.Name,
+                Surname = user.Surname,
                 Phonenumber = user.Phonenumber,
                 IsDeleted = false,
                 IsConfirmed = false
             };
-            return new SignUpResponse { SessionId=session.Id, User = responseUser };
+
+            return new SignUpResponseUserInfo { SessionId = session.Id, User = responseUser };
         }
     }
 }

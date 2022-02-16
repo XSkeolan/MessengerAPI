@@ -2,6 +2,9 @@
 using MessengerAPI.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
+using MessengerAPI.Interfaces;
+using MessengerAPI.Models;
+using MessengerAPI.Repositories;
 
 namespace MessengerAPI.Controllers
 {
@@ -10,35 +13,57 @@ namespace MessengerAPI.Controllers
     public class RegisterController : ControllerBase
     {
         private readonly ISignUpService _signUpService;
+        private readonly IUserRepository _users;
+
         public RegisterController(IConfiguration configuration)
         {
             _signUpService = new SignUpService(configuration);
+            _users = new UserRepository(configuration.GetConnectionString("MessengesAPI"));
         }
 
         [HttpPost]
-        public IActionResult Register(SignUpRequest user)
+        public async Task<IActionResult> Register(SignUpRequestUser inputUser)
         {
-            if (!Regex.IsMatch(user.Phonenumber, @"\d{11}") || user.Phonenumber.Length != 11)
-                return BadRequest("Phone number has an incorrect format");
+            if (!Regex.IsMatch(inputUser.Phonenumber, @"\d{11}") || inputUser.Phonenumber.Length != 11)
+            {
+                return BadRequest(ResponseErrors.PHONENUMBER_INCORRECT);
+            }
 
-            if (user.Name.Length > 50)
+            if (inputUser.Name.Length > 50)
+            {
                 return BadRequest("Name is very long");
-            if (user.Surname.Length > 50)
+            }
+            if (inputUser.Surname.Length > 50)
+            {
                 return BadRequest("Surname is very long");
-            if (user.Password.Length > 32 || user.Password.Length < 10)
-                return BadRequest("Password length must be from 10 to 32 chars");
-
-            SignUpResponse response;
-            try
-            {
-                response = _signUpService.SignUp(user, Request.Headers.UserAgent);
             }
-            catch(ArgumentException ex)
+            if (inputUser.Password.Length > 32 || inputUser.Password.Length < 10)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ResponseErrors.INVALID_PASSWORD);
             }
 
-            return Ok(response);
+            User? user = await _users.FindByPhonenumberAsync(inputUser.Phonenumber);
+            if (user != null)
+            {
+                return BadRequest(ResponseErrors.PHONENUMBER_ALREADY_EXISTS);
+            }
+
+            user = await _users.FindByNicknameAsync(inputUser.Nickname);
+            if (user != null)
+            {
+                return BadRequest(ResponseErrors.NICKNAME_ALREADY_EXISTS);
+            }
+
+            user = new User
+            {
+                Password = inputUser.Password,
+                Phonenumber = inputUser.Phonenumber,
+                Name = inputUser.Name,
+                Surname = inputUser.Surname,
+                Nickname = inputUser.Nickname
+            };
+
+            return Ok(await _signUpService.SignUp(user, new Session() { DeviceName = Request.Headers.UserAgent, DateStart = DateTime.Now }));
         }
     }
 }

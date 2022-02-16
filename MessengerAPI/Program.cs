@@ -1,3 +1,4 @@
+using MessengerAPI.Interfaces;
 using MessengerAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
