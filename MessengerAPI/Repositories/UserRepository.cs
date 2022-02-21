@@ -2,8 +2,6 @@
 using MessengerAPI.Interfaces;
 using MessengerAPI.Models;
 using Microsoft.Extensions.Options;
-using Npgsql;
-using System.Data;
 
 namespace MessengerAPI.Repositories
 {
@@ -64,9 +62,12 @@ namespace MessengerAPI.Repositories
             });
         }
 
-        public override Task<IEnumerable<User>> GetAllAsync()
+        public override async Task<IEnumerable<User>> GetAllAsync()
         {
-            throw new NotImplementedException();
+            return await Execute(async (conn) =>
+            {
+                return await conn.QueryAsync<User>("SELECT * FROM Users");
+            });
         }
     }
 }

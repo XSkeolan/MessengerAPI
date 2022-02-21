@@ -1,6 +1,4 @@
 ﻿using MessengerAPI.Models;
-using System.Data;
-using Npgsql;
 using Dapper;
 using MessengerAPI.Interfaces;
 using Microsoft.Extensions.Options;
@@ -13,47 +11,44 @@ namespace MessengerAPI.Repositories
 
         public override async Task CreateAsync(Session session)
         {
-            using (IDbConnection connection = new NpgsqlConnection(_connectionString))
+            session.Id = await Execute(async (conn) =>
             {
-                connection.Open();
-                IEnumerable<Guid> id = await connection.QueryAsync<Guid>("INSERT INTO Sessions (datestart, userid, devicename) " +
+                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO Sessions (datestart, userid, devicename) " +
                     "VALUES(@DateStart, @UserId, @DeviceName) RETURNING id", session);
-                session.Id = id.FirstOrDefault();
-            }
+            });
         }
 
-        public override Task DeleteAsync(Guid id)
+        public override async Task DeleteAsync(Guid id)
         {
-            throw new NotImplementedException();
-        }
-
-        public async Task FinishSessionAsync(Guid id)
-        {
-            using(IDbConnection connection = new NpgsqlConnection(_connectionString))
+            await Execute(async (conn) =>
             {
-                connection.Open();
-                await connection.ExecuteAsync("UPDATE Sessions SET dateend=@dateEnd WHERE id=@Id", new { DateEnd = DateTime.Now, Id = id });
-            }
+                return await conn.ExecuteAsync("UPDATE Sessions SET dateend=@dateEnd WHERE id=@Id", new { DateEnd = DateTime.Now, Id = id });
+            });
         }
 
-        public override Task<IEnumerable<Session>> GetAllAsync()
+        public override async Task<IEnumerable<Session>> GetAllAsync()
         {
-            throw new NotImplementedException();
+            return await Execute(async (conn) =>
+            {
+                return await conn.QueryAsync<Session>("SELECT * FROM Sessions");
+            });
         }
 
         public override async Task<Session?> GetAsync(Guid id)
         {
-            using(IDbConnection connection = new NpgsqlConnection(_connectionString))
+            return await Execute(async (conn) =>
             {
-                connection.Open();
-                IEnumerable<Session> sessions = await connection.QueryAsync<Session>("SELECT * FROM Sessions WHERE id=@Id", new { id });
+                IEnumerable<Session> sessions = await conn.QueryAsync<Session>("SELECT * FROM Sessions WHERE id=@Id", new { id });
                 return sessions.FirstOrDefault();
-            }
+            });
         }
 
-        public override Task UpdateAsync(Session entity)
+        public override async Task UpdateAsync(Session session)
         {
-            throw new NotImplementedException();
+            await Execute(async (conn) =>
+            {
+                return await conn.ExecuteAsync("UPDATE Sessions SET datestart=@DateStart, userid=@UserId, devicename=@DeviceName, dateend=@DateEnd WHERE id=@Id", session);
+            });
         }
     }
 }

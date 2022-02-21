@@ -2,10 +2,8 @@
 
 namespace MessengerAPI.Interfaces
 {
-    public interface ISessionRepository
+    public interface ISessionRepository : IRepository<Session>
     {
-        Task CreateAsync(Session session);
-        Task FinishSessionAsync(Guid id);
-        Task<Session?> GetAsync(Guid id);
+
     }
 }
