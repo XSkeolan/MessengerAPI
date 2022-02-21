@@ -3,14 +3,15 @@ using System.Data;
 using Npgsql;
 using Dapper;
 using MessengerAPI.Interfaces;
+using Microsoft.Extensions.Options;
 
 namespace MessengerAPI.Repositories
 {
-    public class SessionRepository : BaseRepository, ISessionRepository
+    public class SessionRepository : BaseRepository<Session>, ISessionRepository
     {
-        public SessionRepository(string connectionString) : base(connectionString) { }
+        public SessionRepository(IOptions<Connections> options) : base(options) { }
 
-        public async Task CreateAsync(Session session)
+        public override async Task CreateAsync(Session session)
         {
             using (IDbConnection connection = new NpgsqlConnection(_connectionString))
             {
@@ -19,6 +20,11 @@ namespace MessengerAPI.Repositories
                     "VALUES(@DateStart, @UserId, @DeviceName) RETURNING id", session);
                 session.Id = id.FirstOrDefault();
             }
+        }
+
+        public override Task DeleteAsync(Guid id)
+        {
+            throw new NotImplementedException();
         }
 
         public async Task FinishSessionAsync(Guid id)
@@ -30,7 +36,12 @@ namespace MessengerAPI.Repositories
             }
         }
 
-        public async Task<Session?> GetAsync(Guid id)
+        public override Task<IEnumerable<Session>> GetAllAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override async Task<Session?> GetAsync(Guid id)
         {
             using(IDbConnection connection = new NpgsqlConnection(_connectionString))
             {
@@ -38,6 +49,11 @@ namespace MessengerAPI.Repositories
                 IEnumerable<Session> sessions = await connection.QueryAsync<Session>("SELECT * FROM Sessions WHERE id=@Id", new { id });
                 return sessions.FirstOrDefault();
             }
+        }
+
+        public override Task UpdateAsync(Session entity)
+        {
+            throw new NotImplementedException();
         }
     }
 }

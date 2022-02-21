@@ -1,8 +1,7 @@
 ﻿namespace MessengerAPI.Models
 {
-    public class User
+    public class User : EntityBase
     {
-        public Guid Id { get; set; }
         public string Nickname { get; set; }
         public string Password { get; set; }
         public string Phonenumber { get; set; }

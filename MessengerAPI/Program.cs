@@ -1,5 +1,7 @@
+using MessengerAPI;
 using MessengerAPI.Interfaces;
 using MessengerAPI.Services;
+using MessengerAPI.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,7 +12,13 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddTransient<ISignUpService, SignUpService>();
-
+builder.Services.AddTransient<IUserRepository, UserRepository>();
+builder.Services.AddTransient<ISessionRepository, SessionRepository>();
+builder.Host.ConfigureServices((host, services) =>
+{
+    IConfigurationSection section = host.Configuration.GetSection("ConnectionStrings");
+    services.Configure<Connections>(section);
+});
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

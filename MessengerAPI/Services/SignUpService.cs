@@ -10,14 +10,20 @@ namespace MessengerAPI.Services
         private readonly IUserRepository _users;
         private readonly ISessionRepository _sessions;
 
-        public SignUpService(IConfiguration configuration)
+        public SignUpService(IUserRepository userRepository, ISessionRepository sessionRepository)
         {
-            _users = new UserRepository(configuration.GetConnectionString("MessengerAPI"));
-            _sessions = new SessionRepository(configuration.GetConnectionString("MessengerAPI"));
+            _users = userRepository;
+            _sessions = sessionRepository;
         }
 
         public async Task<SignUpResponseUserInfo> SignUp(User user, Session session)
         {
+            if(await _users.FindByPhonenumberAsync(user.Phonenumber) != null)
+                throw new ArgumentException(ResponseErrors.PHONENUMBER_ALREADY_EXISTS);
+
+            if(await _users.FindByNicknameAsync(user.Nickname) != null)
+                throw new ArgumentException(ResponseErrors.NICKNAME_ALREADY_EXISTS);
+
             await _users.CreateAsync(user);
 
             session.UserId = user.Id;

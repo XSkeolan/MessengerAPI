@@ -1,75 +1,72 @@
 ﻿using Dapper;
 using MessengerAPI.Interfaces;
 using MessengerAPI.Models;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using System.Data;
 
 namespace MessengerAPI.Repositories
 {
-    public class UserRepository : IUserRepository
+    public class UserRepository : BaseRepository<User>, IUserRepository
     {
-        private readonly string _connectionString;
-        public UserRepository(string conn)
-        {
-            _connectionString = conn;
-        }
+        public UserRepository(IOptions<Connections> options) : base(options) { }
 
-        public async Task CreateAsync(User user)
+        public override async Task CreateAsync(User user)
         {
-            using (IDbConnection conn = new NpgsqlConnection(_connectionString))
+            user.Id = await Execute(async (conn) =>
             {
-                conn.Open();
-                IEnumerable<Guid> id = await conn.QueryAsync<Guid>("INSERT INTO Users (nickname, password, phonenumber, name, surname) " +
-                    "VALUES(@Nickname, @Password, @Phonenumber, @Name, @Surname) RETURNING id", user);
-                user.Id = id.FirstOrDefault();
-            }
+                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO Users (nickname, password, phonenumber, name, surname) " +
+                "VALUES(@Nickname, @Password, @Phonenumber, @Name, @Surname) RETURNING id", user);
+            });
         }
-        public async Task DeleteAsync(Guid id)
+        
+        public override async Task DeleteAsync(Guid id)
         {
-            using (IDbConnection conn = new NpgsqlConnection(_connectionString))
+            await Execute(async (conn) =>
             {
-                conn.Open();
-                await conn.ExecuteAsync("UPADETE Users SET isdeleted=@IsDeleted FROM Users WHERE id=@Id", new { IsDeleted = true, Id = id });
-            }
+                return await conn.ExecuteAsync("UPDATE Users SET isdeleted=@IsDeleted FROM Users WHERE id=@Id", new { IsDeleted = true, Id = id });
+            });
         }
 
         public async Task<User?> FindByNicknameAsync(string nickname)
         {
-            using (IDbConnection conn = new NpgsqlConnection(_connectionString))
+            return await Execute(async (conn) =>
             {
-                conn.Open();
                 IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE nickname=@Nickname", new { nickname });
                 return users.FirstOrDefault();
-            }
+            });   
         }
 
         public async Task<User?> FindByPhonenumberAsync(string phonenumber)
         {
-            using (IDbConnection conn = new NpgsqlConnection(_connectionString))
+            return await Execute(async (conn) =>
             {
-                conn.Open();
                 IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE phonenumber=@Phonenumber", new { phonenumber });
                 return users.FirstOrDefault();
-            }
+            });
         }
 
-        public async Task<User?> GetAsync(Guid id)
+        public override async Task<User?> GetAsync(Guid id)
         {
-            using (IDbConnection conn = new NpgsqlConnection(_connectionString))
-            {
-                conn.Open();
-                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE id=@Id", new { id });
-                return users.FirstOrDefault();
-            }
+            return await Execute(async (conn) => 
+            { 
+                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE id=@Id", new { id }); 
+                return users.FirstOrDefault(); 
+            });
         }
-        public async Task UpdateAsync(User user)
+
+        public override async Task UpdateAsync(User user)
         {
-            using (IDbConnection conn = new NpgsqlConnection(_connectionString))
+            await Execute(async (conn) =>
             {
-                conn.Open();
-                await conn.ExecuteAsync("UPDATE Users SET nickname=@Nickname, password=@Password, phonenumber=@Phonenumber, name=@Name, " +
+                return await conn.ExecuteAsync("UPDATE Users SET nickname=@Nickname, password=@Password, phonenumber=@Phonenumber, name=@Name, " +
                     "surname=@Surname, email=@Email, isconfirmed=@IsConfirmed WHERE id=@Id", user);
-            }
+            });
+        }
+
+        public override Task<IEnumerable<User>> GetAllAsync()
+        {
+            throw new NotImplementedException();
         }
     }
 }

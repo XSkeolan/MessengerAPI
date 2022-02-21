@@ -1,10 +1,8 @@
-﻿using MessengerAPI.Services;
-using MessengerAPI.DTOs;
+﻿using MessengerAPI.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
 using MessengerAPI.Interfaces;
 using MessengerAPI.Models;
-using MessengerAPI.Repositories;
 
 namespace MessengerAPI.Controllers
 {
@@ -13,12 +11,10 @@ namespace MessengerAPI.Controllers
     public class RegisterController : ControllerBase
     {
         private readonly ISignUpService _signUpService;
-        private readonly IUserRepository _users;
 
-        public RegisterController(IConfiguration configuration)
+        public RegisterController(ISignUpService signUp)
         {
-            _signUpService = new SignUpService(configuration);
-            _users = new UserRepository(configuration.GetConnectionString("MessengesAPI"));
+            _signUpService = signUp;
         }
 
         [HttpPost]
@@ -31,30 +27,22 @@ namespace MessengerAPI.Controllers
 
             if (inputUser.Name.Length > 50)
             {
-                return BadRequest("Name is very long");
+                return BadRequest(ResponseErrors.FIELD_LENGTH_IS_LONG + " (Name)");
             }
             if (inputUser.Surname.Length > 50)
             {
-                return BadRequest("Surname is very long");
+                return BadRequest(ResponseErrors.FIELD_LENGTH_IS_LONG + " (Surname)");
             }
             if (inputUser.Password.Length > 32 || inputUser.Password.Length < 10)
             {
                 return BadRequest(ResponseErrors.INVALID_PASSWORD);
             }
-
-            User? user = await _users.FindByPhonenumberAsync(inputUser.Phonenumber);
-            if (user != null)
+            if(inputUser.Nickname.Length > 20)
             {
-                return BadRequest(ResponseErrors.PHONENUMBER_ALREADY_EXISTS);
+                return BadRequest(ResponseErrors.FIELD_LENGTH_IS_LONG + " (Nickname)");
             }
 
-            user = await _users.FindByNicknameAsync(inputUser.Nickname);
-            if (user != null)
-            {
-                return BadRequest(ResponseErrors.NICKNAME_ALREADY_EXISTS);
-            }
-
-            user = new User
+            User user = new User
             {
                 Password = inputUser.Password,
                 Phonenumber = inputUser.Phonenumber,
@@ -63,7 +51,14 @@ namespace MessengerAPI.Controllers
                 Nickname = inputUser.Nickname
             };
 
-            return Ok(await _signUpService.SignUp(user, new Session() { DeviceName = Request.Headers.UserAgent, DateStart = DateTime.Now }));
+            try
+            {
+                return Ok(await _signUpService.SignUp(user, new Session() { DeviceName = Request.Headers.UserAgent, DateStart = DateTime.Now }));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }
