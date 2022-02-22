@@ -14,6 +14,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddTransient<ISignUpService, SignUpService>();
 builder.Services.AddTransient<IUserRepository, UserRepository>();
 builder.Services.AddTransient<ISessionRepository, SessionRepository>();
+
 builder.Host.ConfigureServices((host, services) =>
 {
     IConfigurationSection section = host.Configuration.GetSection("ConnectionStrings");

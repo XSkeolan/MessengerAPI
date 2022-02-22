@@ -25,6 +25,5 @@ namespace MessengerAPI.Repositories
         public abstract Task DeleteAsync(Guid id);
         public abstract Task UpdateAsync(TEntity entity);
         public abstract Task<TEntity> GetAsync(Guid id);
-        public abstract Task<IEnumerable<TEntity>> GetAllAsync();
     }
 }

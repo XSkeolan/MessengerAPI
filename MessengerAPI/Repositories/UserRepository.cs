@@ -14,7 +14,7 @@ namespace MessengerAPI.Repositories
             user.Id = await Execute(async (conn) =>
             {
                 return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO Users (nickname, password, phonenumber, name, surname) " +
-                "VALUES(@Nickname, @Password, @Phonenumber, @Name, @Surname) RETURNING id", user);
+                "VALUES(@Nickname, @HashedPassword, @Phonenumber, @Name, @Surname) RETURNING id", user);
             });
         }
         
@@ -22,7 +22,7 @@ namespace MessengerAPI.Repositories
         {
             await Execute(async (conn) =>
             {
-                return await conn.ExecuteAsync("UPDATE Users SET isdeleted=@IsDeleted FROM Users WHERE id=@Id", new { IsDeleted = true, Id = id });
+                return await conn.ExecuteAsync("UPDATE Users SET isdeleted=@IsDeleted FROM Users WHERE id=@Id AND isdeleted=false", new { IsDeleted = true, Id = id });
             });
         }
 
@@ -30,7 +30,7 @@ namespace MessengerAPI.Repositories
         {
             return await Execute(async (conn) =>
             {
-                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE nickname=@Nickname", new { nickname });
+                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE nickname=@Nickname AND isdeleted=false", new { nickname });
                 return users.FirstOrDefault();
             });   
         }
@@ -39,7 +39,7 @@ namespace MessengerAPI.Repositories
         {
             return await Execute(async (conn) =>
             {
-                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE phonenumber=@Phonenumber", new { phonenumber });
+                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE phonenumber=@Phonenumber AND isdeleted=false", new { phonenumber });
                 return users.FirstOrDefault();
             });
         }
@@ -48,7 +48,7 @@ namespace MessengerAPI.Repositories
         {
             return await Execute(async (conn) => 
             { 
-                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE id=@Id", new { id }); 
+                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE id=@Id AND isdeleted=false", new { id }); 
                 return users.FirstOrDefault(); 
             });
         }
@@ -59,14 +59,6 @@ namespace MessengerAPI.Repositories
             {
                 return await conn.ExecuteAsync("UPDATE Users SET nickname=@Nickname, password=@Password, phonenumber=@Phonenumber, name=@Name, " +
                     "surname=@Surname, email=@Email, isconfirmed=@IsConfirmed WHERE id=@Id", user);
-            });
-        }
-
-        public override async Task<IEnumerable<User>> GetAllAsync()
-        {
-            return await Execute(async (conn) =>
-            {
-                return await conn.QueryAsync<User>("SELECT * FROM Users");
             });
         }
     }

@@ -27,11 +27,11 @@ namespace MessengerAPI.Controllers
 
             if (inputUser.Name.Length > 50)
             {
-                return BadRequest(ResponseErrors.FIELD_LENGTH_IS_LONG + " (Name)");
+                return BadRequest(ResponseErrors.FIELD_LENGTH_IS_LONG);
             }
             if (inputUser.Surname.Length > 50)
             {
-                return BadRequest(ResponseErrors.FIELD_LENGTH_IS_LONG + " (Surname)");
+                return BadRequest(ResponseErrors.FIELD_LENGTH_IS_LONG);
             }
             if (inputUser.Password.Length > 32 || inputUser.Password.Length < 10)
             {
@@ -39,12 +39,11 @@ namespace MessengerAPI.Controllers
             }
             if(inputUser.Nickname.Length > 20)
             {
-                return BadRequest(ResponseErrors.FIELD_LENGTH_IS_LONG + " (Nickname)");
+                return BadRequest(ResponseErrors.FIELD_LENGTH_IS_LONG);
             }
 
             User user = new User
             {
-                Password = inputUser.Password,
                 Phonenumber = inputUser.Phonenumber,
                 Name = inputUser.Name,
                 Surname = inputUser.Surname,
@@ -53,7 +52,7 @@ namespace MessengerAPI.Controllers
 
             try
             {
-                return Ok(await _signUpService.SignUp(user, new Session() { DeviceName = Request.Headers.UserAgent, DateStart = DateTime.Now }));
+                return Ok(await _signUpService.SignUp(user, Request.Headers.UserAgent, inputUser.Password));
             }
             catch (ArgumentException ex)
             {
