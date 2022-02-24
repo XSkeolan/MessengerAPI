@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Npgsql;
+﻿using MessengerAPI.DTOs;
+using MessengerAPI.Interfaces;
+using Microsoft.AspNetCore.Mvc;
 
 namespace MessengerAPI.Controllers
 {
@@ -7,27 +8,24 @@ namespace MessengerAPI.Controllers
     [ApiController]
     public class SignOutController : ControllerBase
     {
-        private readonly IConfiguration _configuration;
-        public SignOutController(IConfiguration configuration)
+        private readonly ISignOutService _signOutService;
+        public SignOutController(ISignOutService signOutService)
         {
-            _configuration = configuration;
+            _signOutService = signOutService;
         }
 
         [HttpPost]
-        public async Task<IActionResult> SignOut(Guid sessionId)
+        public async Task<IActionResult> SignOut(SignOutRequest signOutRequest)
         {
-            using var connection = new NpgsqlConnection(_configuration["ConnectionStrings:MessengerAPI"]);
-            connection.Open();
-            using var command = connection.CreateCommand();
-            command.CommandText = "UPDATE Sessions SET dateEnd=@date WHERE id=@sessionId";
-
-            command.Parameters.Add(new NpgsqlParameter<DateTime>("@date", DateTime.Now));
-            command.Parameters.Add(new NpgsqlParameter<Guid>("@sessionId", sessionId));
-
-            if (await command.ExecuteNonQueryAsync() != 0)
+            try
+            {
+                await _signOutService.SignOut(signOutRequest.SessionId, signOutRequest.UserId);
                 return Ok();
-            else
-                return BadRequest("Session Not found");
+            }
+            catch
+            {
+                return BadRequest(ResponseErrors.INVALID_FIELDS);
+            }
         }
     }
 }

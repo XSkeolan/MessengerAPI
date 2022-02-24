@@ -7,5 +7,7 @@
         public const string INVALID_PASSWORD = "Password length must be from 10 to 32 chars";
         public const string FIELD_LENGTH_IS_LONG = "One or more fields is very long";
         public const string USER_NOT_FOUND = "User not found";
+        public const string SESSION_NOT_FOUND = "Session not found";
+        public const string INVALID_FIELDS = "Some fields is invalid";
     }
 }
