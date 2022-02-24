@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Npgsql;
-using MessengerAPI.Models;
+using System.Text.RegularExpressions;
+using MessengerAPI.DTOs;
+using MessengerAPI.Interfaces;
 
 namespace MessengerAPI.Controllers
 {
@@ -9,60 +10,34 @@ namespace MessengerAPI.Controllers
     [ApiController]
     public class SignInController : ControllerBase
     {
-        private readonly IConfiguration _configuration;
+        private readonly ISignInService _signInService;
 
-        public SignInController(IConfiguration configuration)
+        public SignInController(ISignInService signInService)
         {
-            _configuration = configuration;
+            _signInService = signInService;
         }
 
         [HttpPost]
-        public async Task<IActionResult> Sign(string phoneNumber, string password)
+        public async Task<IActionResult> SignIn(SignInRequest inputUser)
         {
-            Guid sessionGuid;
-
-            using (var connection = new NpgsqlConnection(_configuration["ConnectionStrings:MessengerAPI"]))
+            if (!Regex.IsMatch(inputUser.Phonenumber, @"\d{11}") || inputUser.Phonenumber.Length != 11)
             {
-                connection.Open();
-
-                Guid user;
-
-                using(var command = connection.CreateCommand())
-                {
-                    command.CommandText = "SELECT id, password FROM Users WHERE PhoneNumber=@phonenumber";
-                    command.Parameters.Add(new NpgsqlParameter<string>("@phonenumber", phoneNumber));
-
-                    using (var reader = await command.ExecuteReaderAsync())
-                    {
-                        if (!reader.HasRows)
-                            return BadRequest("Phone number not found! Register in messager");
-                        else
-                        {
-                            reader.Read();
-                            user = (Guid)reader[0];
-                            if ((string)reader[1] != password)
-                                return BadRequest("Password is not correct");
-                        }
-                    }
-                }
-
-                using(var command = connection.CreateCommand())
-                {
-                    sessionGuid = Guid.NewGuid();
-
-                    command.CommandText = "INSERT INTO Sessions VALUES(@id, @datetime, @userId, @device)";
-                    command.Parameters.Add(new NpgsqlParameter<Guid>("@id", sessionGuid));
-                    command.Parameters.Add(new NpgsqlParameter<DateTime>("@datetime", DateTime.Now));
-                    command.Parameters.Add(new NpgsqlParameter<Guid>("@userId", user));
-                    command.Parameters.Add(new NpgsqlParameter<string>(@"device", Request.Headers.UserAgent));
-
-                    await command.ExecuteNonQueryAsync();
-                }
-
-                connection.Close();
+                return BadRequest(ResponseErrors.PHONENUMBER_INCORRECT);
             }
-            // возможно лучше пользователя вернуть
-            return Ok(sessionGuid);
+
+            if (inputUser.Password.Length > 32 || inputUser.Password.Length < 10)
+            {
+                return BadRequest(ResponseErrors.INVALID_PASSWORD);
+            }
+
+            try
+            {
+                return Ok(await _signInService.SignIn(inputUser.Phonenumber, inputUser.Password));
+            }
+            catch(ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

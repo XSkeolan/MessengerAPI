@@ -30,7 +30,7 @@ namespace MessengerAPI.Repositories
         {
             return await Execute(async (conn) =>
             {
-                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE nickname=@Nickname AND isdeleted=false", new { nickname });
+                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE nickname=@Nickname", new { nickname });
                 return users.FirstOrDefault();
             });   
         }
@@ -39,7 +39,7 @@ namespace MessengerAPI.Repositories
         {
             return await Execute(async (conn) =>
             {
-                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE phonenumber=@Phonenumber AND isdeleted=false", new { phonenumber });
+                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE phonenumber=@Phonenumber", new { phonenumber });
                 return users.FirstOrDefault();
             });
         }
@@ -48,17 +48,40 @@ namespace MessengerAPI.Repositories
         {
             return await Execute(async (conn) => 
             { 
-                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE id=@Id AND isdeleted=false", new { id }); 
+                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE id=@Id", new { id }); 
                 return users.FirstOrDefault(); 
             });
         }
 
-        public override async Task UpdateAsync(User user)
+        public async Task UpdateAsync(Guid id, string email, bool isConfimed = false)
         {
             await Execute(async (conn) =>
             {
-                return await conn.ExecuteAsync("UPDATE Users SET nickname=@Nickname, password=@Password, phonenumber=@Phonenumber, name=@Name, " +
-                    "surname=@Surname, email=@Email, isconfirmed=@IsConfirmed WHERE id=@Id", user);
+                return await conn.ExecuteAsync("UPDATE Users SET email=@Email, isconfirmed=@IsConfirmed WHERE id=@Id AND isdeleted=false", new { Email = email, isConfimed = isConfimed});
+            });
+        }
+
+        public async Task UpdateAsync(Guid id, string name, string surname)
+        {
+            await Execute(async (conn) =>
+            {
+                return await conn.ExecuteAsync("UPDATE Users SET name=@Name, surname=@Surname WHERE id=@Id AND isdeleted=false", new { Name = name, Surname = surname });
+            });
+        }
+
+        public async Task UpdateAsync(Guid id, string nickname)
+        {
+            await Execute(async (conn) =>
+            {
+                return await conn.ExecuteAsync("UPDATE Users SET nickname=@Nickname WHERE id=@Id AND isdeleted=false", new { Nickname=nickname });
+            });
+        }
+
+        public async Task ChangePassword(Guid id, string hashedPassword)
+        {
+            await Execute(async (conn) =>
+            {
+                return await conn.ExecuteAsync("UPDATE Users SET password=@Password WHERE id=@Id AND isdeleted=false", new { Password = hashedPassword });
             });
         }
     }

@@ -16,24 +16,13 @@ namespace MessengerAPI.Services
             _sessions = sessionRepository;
         }
 
-        public async Task<SignUpResponseUserInfo> SignUp(User user, string enteringDeviceName, string password)
+        public async Task<SignInResponseUserInfo> SignUp(User user, string enteringDeviceName, string password)
         {
             if(await _users.FindByPhonenumberAsync(user.Phonenumber) != null || 
                 await _users.FindByNicknameAsync(user.Nickname) != null)
                 throw new ArgumentException(ResponseErrors.ALREADY_EXISTS);
 
-            byte[] salt = new byte[16];
-            var rng = RandomNumberGenerator.Create();
-            rng.GetBytes(salt);
-
-            var pbkdf2 = new Rfc2898DeriveBytes(password, salt, 10000);
-            byte[] hash = pbkdf2.GetBytes(20);
-
-            byte[] hashBytes = new byte[36];
-            Array.Copy(salt, 0, hashBytes, 0, 16);
-            Array.Copy(hash, 0, hashBytes, 16, 20);
-
-            user.HashedPassword = Convert.ToBase64String(hashBytes);
+            user.HashedPassword = Password.GetHasedPassword(password);
 
             await _users.CreateAsync(user);
 
@@ -51,7 +40,7 @@ namespace MessengerAPI.Services
                 IsConfirmed = false
             };
 
-            return new SignUpResponseUserInfo { SessionId = session.Id, User = responseUser };
+            return new SignInResponseUserInfo { SessionId = session.Id, User = responseUser };
         }
     }
 }

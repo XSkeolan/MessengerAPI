@@ -1,6 +1,6 @@
 ﻿namespace MessengerAPI.DTOs
 {
-    public class SignUpResponseUserInfo
+    public class SignInResponseUserInfo
     {
         /// <summary>
         /// Идентификатор сессии в которую вошел пользователь

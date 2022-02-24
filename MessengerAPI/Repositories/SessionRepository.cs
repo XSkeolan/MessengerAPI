@@ -34,13 +34,5 @@ namespace MessengerAPI.Repositories
                 return sessions.FirstOrDefault();
             });
         }
-
-        public override async Task UpdateAsync(Session session)
-        {
-            await Execute(async (conn) =>
-            {
-                return await conn.ExecuteAsync("UPDATE Sessions SET datestart=@DateStart, userid=@UserId, devicename=@DeviceName, dateend=@DateEnd WHERE id=@Id AND dateend<>NULL", session);
-            });
-        }
     }
 }
