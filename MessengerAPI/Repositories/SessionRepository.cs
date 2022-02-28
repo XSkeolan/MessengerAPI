@@ -22,7 +22,7 @@ namespace MessengerAPI.Repositories
         {
             await Execute(async (conn) =>
             {
-                return await conn.ExecuteAsync("UPDATE Sessions SET dateend=@dateEnd WHERE id=@Id AND dateend<>NULL", new { DateEnd = DateTime.Now, Id = id });
+                return await conn.ExecuteAsync("UPDATE Sessions SET dateend=@DateEnd WHERE id=@Id AND dateend is null", new { DateEnd = DateTime.Now, Id = id });
             });
         }
 
@@ -30,7 +30,7 @@ namespace MessengerAPI.Repositories
         {
             return await Execute(async (conn) =>
             {
-                IEnumerable<Session> sessions = await conn.QueryAsync<Session>("SELECT * FROM Sessions WHERE id=@Id AND dateend<>NULL", new { id });
+                IEnumerable<Session> sessions = await conn.QueryAsync<Session>("SELECT * FROM Sessions WHERE id=@Id", new { id });
                 return sessions.FirstOrDefault();
             });
         }

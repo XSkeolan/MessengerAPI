@@ -22,7 +22,7 @@ namespace MessengerAPI.Services
                 await _users.FindByNicknameAsync(user.Nickname) != null)
                 throw new ArgumentException(ResponseErrors.ALREADY_EXISTS);
 
-            user.HashedPassword = Password.GetHasedPassword(password);
+            user.Password = Password.GetHasedPassword(password);
 
             await _users.CreateAsync(user);
 

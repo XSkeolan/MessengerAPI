@@ -38,6 +38,10 @@ namespace MessengerAPI.Controllers
             {
                 return BadRequest(ex.Message);
             }
+            catch(UnauthorizedAccessException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

@@ -21,8 +21,7 @@ namespace MessengerAPI.Services
             if (user == null)
                 throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
 
-            if (Password.GetHasedPassword(password) != user.HashedPassword)
-                throw new ArgumentException(ResponseErrors.INVALID_PASSWORD);
+            Password.VerifyHashedPassword(user.Password, password);
 
             Session session = new Session { DateStart = DateTime.Now, UserId = user.Id };
             await _sessionRepository.CreateAsync(session);

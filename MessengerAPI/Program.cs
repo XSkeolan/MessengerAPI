@@ -12,6 +12,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddTransient<ISignUpService, SignUpService>();
+builder.Services.AddTransient<ISignInService, SignInService>();
+builder.Services.AddTransient<ISignOutService, SignOutService>();
 builder.Services.AddTransient<IUserRepository, UserRepository>();
 builder.Services.AddTransient<ISessionRepository, SessionRepository>();
 
