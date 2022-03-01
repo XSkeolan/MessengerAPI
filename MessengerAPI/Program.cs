@@ -15,6 +15,10 @@ builder.Services.AddTransient<ISignUpService, SignUpService>();
 builder.Services.AddTransient<ISignInService, SignInService>();
 builder.Services.AddTransient<ISignOutService, SignOutService>();
 builder.Services.AddTransient<IUserRepository, UserRepository>();
+builder.Services.AddTransient<IChatRepository, ChatRepository>();
+builder.Services.AddTransient<IChatService, ChatService>();
+builder.Services.AddTransient<IUserChatRepository, UserChatRepository>();
+builder.Services.AddTransient<IUserTypeRepository, UserTypeRepository>();
 builder.Services.AddTransient<ISessionRepository, SessionRepository>();
 
 builder.Host.ConfigureServices((host, services) =>

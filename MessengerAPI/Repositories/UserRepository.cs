@@ -22,7 +22,7 @@ namespace MessengerAPI.Repositories
         {
             await Execute(async (conn) =>
             {
-                return await conn.ExecuteAsync("UPDATE Users SET isdeleted=@IsDeleted FROM Users WHERE id=@Id AND isdeleted=false", new { IsDeleted = true, Id = id });
+                return await conn.ExecuteAsync("UPDATE Users SET isdeleted=@IsDeleted WHERE id=@Id AND isdeleted=false", new { IsDeleted = true, Id = id });
             });
         }
 
