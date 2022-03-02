@@ -31,11 +31,12 @@ namespace MessengerAPI.Controllers
                 { 
                     DateSend = DateTime.Now,
                     From = request.From,
-                    Destination =request.To,
+                    Destination =request.Destination,
+                    DestinationType = request.DestinationType,
                     Text = request.Message,
                     OriginalMessageId = request.ReplyMessageId 
                 };
-                return Ok(await _messageService.SendMessageToUserAsync(message));
+                return Ok(await _messageService.SendMessageAsync(message));
             }
             catch(ArgumentException ex)
             {

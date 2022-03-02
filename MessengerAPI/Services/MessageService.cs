@@ -17,17 +17,21 @@ namespace MessengerAPI.Services
             _chatRepository = chatRepository;
         }
 
-        public async Task<MessageResponse> SendMessageToChatAsync(Message message)
+        public async Task<MessageResponse> SendMessageAsync(Message message)
         {
-            throw new NotImplementedException();
-        }
-
-        public async Task<MessageResponse> SendMessageToUserAsync(Message message)
-        {
-            if(await _userRepository.GetAsync(message.Destination) == null || 
-                await _userRepository.GetAsync(message.From) == null)
+            bool destinationExists = false;
+            if (message.DestinationType == DestinationType.User)
             {
-                throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
+                destinationExists = await _userRepository.GetAsync(message.Destination) == null;
+            }
+            else if(message.DestinationType == DestinationType.Chat)
+            {
+                destinationExists = await _chatRepository.GetAsync(message.Destination) == null;
+            }
+
+            if (destinationExists || await _userRepository.GetAsync(message.From) == null)
+            {
+                throw new ArgumentException(ResponseErrors.DESTINATION_NOT_FOUND);
             }
             if (_messageRepository.GetAsync(message.OriginalMessageId ?? Guid.Empty) == null)
             {
@@ -42,7 +46,7 @@ namespace MessengerAPI.Services
                 FromId = message.From, 
                 Message = message.Text, 
                 Date = message.DateSend, 
-                DestinationId = message.Destination 
+                DestinationId = message.Destination
             };
         }
 

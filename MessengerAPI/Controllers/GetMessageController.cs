@@ -15,9 +15,9 @@ namespace MessengerAPI.Controllers
             _messageService = messageService;
         }
         [HttpGet]
-        public async Task<IActionResult> GetMessages(Guid chatid)
+        public async Task<IActionResult> GetMessages(Guid companionId)
         {
-            return Ok(await _messageService.GetMessagesAsync(chatid));
+            return Ok(await _messageService.GetMessagesAsync(companionId));
         }
     }
 }

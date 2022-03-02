@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using MessengerAPI.Models;
+using System.Text.Json.Serialization;
 
 namespace MessengerAPI.DTOs
 {
@@ -6,7 +7,8 @@ namespace MessengerAPI.DTOs
     {
         public string Message { get; set; }
         public Guid From { get; set; }
-        public Guid To { get; set; }
+        public Guid Destination { get; set; }
+        public DestinationType DestinationType { get; set; }
         public Guid? ReplyMessageId { get; set; }
     }
 }

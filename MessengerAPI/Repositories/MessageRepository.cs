@@ -13,8 +13,8 @@ namespace MessengerAPI.Repositories
         {
             message.Id = await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO messages (text, datasend, \"from\", destination, originalmessageid) " +
-                    "VALUES(@Text, @DateSend, @From, @Destination, @OriginalMessageId) RETURNING id", message);
+                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO messages (text, datasend, \"from\", destination, destinationtype, originalmessageid) " +
+                    "VALUES(@Text, @DateSend, @From, @Destination, @DestinationType, @OriginalMessageId) RETURNING id", message);
             });
         }
 

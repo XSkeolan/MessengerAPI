@@ -12,5 +12,6 @@
         public const string INVALID_INVITE_USER = "One of users can not be invite";
         public const string EMPTY_MESSAGE = "Message is empty";
         public const string MESSAGE_NOT_FOUND = "Message not found";
+        public const string DESTINATION_NOT_FOUND = "Destination of message not found";
     }
 }
