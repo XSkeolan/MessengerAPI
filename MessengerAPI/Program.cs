@@ -14,12 +14,18 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddTransient<ISignUpService, SignUpService>();
 builder.Services.AddTransient<ISignInService, SignInService>();
 builder.Services.AddTransient<ISignOutService, SignOutService>();
+
 builder.Services.AddTransient<IUserRepository, UserRepository>();
+builder.Services.AddTransient<ISessionRepository, SessionRepository>();
+
 builder.Services.AddTransient<IChatRepository, ChatRepository>();
 builder.Services.AddTransient<IChatService, ChatService>();
 builder.Services.AddTransient<IUserChatRepository, UserGroupRepository>();
 builder.Services.AddTransient<IUserTypeRepository, UserTypeRepository>();
-builder.Services.AddTransient<ISessionRepository, SessionRepository>();
+
+builder.Services.AddTransient<IMessageRepository, MessageRepository>();
+builder.Services.AddTransient<IMessageService, MessageService>();
+
 
 builder.Host.ConfigureServices((host, services) =>
 {

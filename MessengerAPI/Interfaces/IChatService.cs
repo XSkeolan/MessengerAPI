@@ -1,9 +1,10 @@
-﻿using MessengerAPI.Models;
+﻿using MessengerAPI.DTOs;
+using MessengerAPI.Models;
 
 namespace MessengerAPI.Interfaces
 {
     public interface IChatService
     {
-        Task CreateChat(Chat chat, Guid[] inviteUsers);
+        Task<ChatCreateResponse> CreateChat(Chat chat, Guid[] inviteUsers);
     }
 }

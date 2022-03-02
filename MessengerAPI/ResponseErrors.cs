@@ -9,5 +9,8 @@
         public const string USER_NOT_FOUND = "User not found";
         public const string SESSION_NOT_FOUND = "Session not found";
         public const string INVALID_FIELDS = "Some fields is invalid";
+        public const string INVALID_INVITE_USER = "One of users can not be invite";
+        public const string EMPTY_MESSAGE = "Message is empty";
+        public const string MESSAGE_NOT_FOUND = "Message not found";
     }
 }

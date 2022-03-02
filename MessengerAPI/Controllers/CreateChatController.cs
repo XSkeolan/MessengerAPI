@@ -16,16 +16,16 @@ namespace MessengerAPI.Controllers
             _chatService = chatService;
         }
         [HttpPost]
-        public IActionResult CreateChat(ChatRequest request)
+        public async Task<IActionResult> CreateChat(ChatRequest request)
         {
             if (request.Name == string.Empty || request.InviteUsers.Length == 0)
             {
                 return BadRequest(ResponseErrors.INVALID_FIELDS);
             }
 
-            if (request.InviteUsers.Length == 1 && request.InviteUsers[0] == request.AdministratorId)
+            if (request.InviteUsers.Contains(request.AdministratorId))
             {
-                return BadRequest();
+                return BadRequest(ResponseErrors.INVALID_INVITE_USER);
             }
 
             //if (request.Photo != null)
@@ -35,9 +35,15 @@ namespace MessengerAPI.Controllers
             //        sw.Write(request.Photo, 0, request.Photo.Length);
             //    }
             //}
-            Chat chat = new Chat { Name=request.Name, Description = request.Description, Administrator = request.AdministratorId, Photo = new InputFile("", ""), Created = DateTime.Now };
-            _chatService.CreateChat(chat, request.InviteUsers);
-            return Ok();
+            Chat chat = new Chat 
+            { 
+                Name=request.Name, 
+                Description = request.Description, 
+                Administrator = request.AdministratorId, 
+                Photo = new InputFile("", ""), 
+                Created = DateTime.Now 
+            };
+            return Ok(await _chatService.CreateChat(chat, request.InviteUsers.Distinct().ToArray()));
         }
     }
 }
