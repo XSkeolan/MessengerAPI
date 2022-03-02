@@ -2,7 +2,7 @@
 
 namespace MessengerAPI.Interfaces
 {
-    public interface IUserChatRepository :IRepository<UserChat>
+    public interface IUserChatRepository :IRepository<UserGroup>
     {
     }
 }

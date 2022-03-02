@@ -28,14 +28,14 @@ namespace MessengerAPI.Controllers
                 return BadRequest();
             }
 
-            if (request.Photo != null)
-            {
-                using (Stream sw = new FileStream("", FileMode.CreateNew))
-                {
-                    sw.Write(request.Photo, 0, request.Photo.Length);
-                }
-            }
-            Chat chat = new Chat { Name=request.Name, Description = request.Description, Administrator = request.AdministratorId, Photo = new InputFile("",""), Created = DateTime.Now };
+            //if (request.Photo != null)
+            //{
+            //    using (Stream sw = new FileStream("", FileMode.CreateNew))
+            //    {
+            //        sw.Write(request.Photo, 0, request.Photo.Length);
+            //    }
+            //}
+            Chat chat = new Chat { Name=request.Name, Description = request.Description, Administrator = request.AdministratorId, Photo = new InputFile("", ""), Created = DateTime.Now };
             _chatService.CreateChat(chat, request.InviteUsers);
             return Ok();
         }

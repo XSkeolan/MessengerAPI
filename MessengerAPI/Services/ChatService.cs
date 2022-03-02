@@ -20,8 +20,9 @@ namespace MessengerAPI.Services
         {
             await _chats.CreateAsync(chat);
             for(int i = 0;i<inviteUsers.Length;i++)
-                await _usersInChats.CreateAsync(new UserChat 
-                { ChatId = chat.Id, UserId = inviteUsers[i], UserTypeId = await _userTypes.GetIdByTypeName("user")});
+                await _usersInChats.CreateAsync(new UserGroup 
+                { GroupId = chat.Id, UserId = inviteUsers[i], UserTypeId = await _userTypes.GetIdByTypeName("user")});
+            await _usersInChats.CreateAsync(new UserGroup { GroupId = chat.Id, UserId = chat.Administrator, UserTypeId = await _userTypes.GetIdByTypeName("admin") });
         }
     }
 }

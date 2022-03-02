@@ -13,9 +13,9 @@ namespace MessengerAPI.Repositories
         {
             chat.Id = await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO groups (name, description, photo, administrator, datecreate, ischannel) " +
-                    "VALUES(@Name, @Description, @Photo, @Administrator, @DateCreate, @IsChannel) RETURNING id",
-                    new { Name = chat.Name, Description = chat.Description, Photo = chat.Photo, Administrator=chat.Administrator, DateCreate = chat.Created, IsChannel = false });
+                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO groups (name, description, administrator, datecreate, ischannel) " +
+                    "VALUES(@Name, @Description, @Administrator, @DateCreate, @IsChannel) RETURNING id",
+                    new { Name = chat.Name, Description = chat.Description, /*Photo = chat.Photo,*/ Administrator=chat.Administrator, DateCreate = chat.Created, IsChannel = false });
             });
         }
 

@@ -5,16 +5,16 @@ using Microsoft.Extensions.Options;
 
 namespace MessengerAPI.Repositories
 {
-    public class UserChatRepository : BaseRepository<UserChat>, IUserChatRepository
+    public class UserGroupRepository : BaseRepository<UserGroup>, IUserChatRepository
     {
-        public UserChatRepository(IOptions<Connections> options) : base(options) { }
+        public UserGroupRepository(IOptions<Connections> options) : base(options) { }
 
-        public override async Task CreateAsync(UserChat userChat)
+        public override async Task CreateAsync(UserGroup userChat)
         {
             userChat.Id = await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO usergroup (userId, groupId, usertype) " +
-                "VALUES(@UserId, @ChatId, @UserTypeId) RETURNING id", userChat);
+                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO usergroup (userid, groupid, usertypeid) " +
+                "VALUES(@UserId, @GroupId, @UserTypeId) RETURNING id", userChat);
             });
         }
 
@@ -26,11 +26,11 @@ namespace MessengerAPI.Repositories
             });
         }
 
-        public override async Task<UserChat> GetAsync(Guid id)
+        public override async Task<UserGroup> GetAsync(Guid id)
         {
             return await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<UserChat>("SELECT * FROM usergroup WHERE id=@Id AND isdeleted=false", new { id });
+                return await conn.QueryFirstOrDefaultAsync<UserGroup>("SELECT * FROM usergroup WHERE id=@Id AND isdeleted=false", new { id });
             });
         }
     }
