@@ -103,12 +103,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
-
-app.Map("/private", context =>
-{
-    app.UseMiddleware<JwtMiddleware>();
-});
-
+app.UseMiddleware<JwtMiddleware>();
 app.MapControllers();
 
 app.Run();

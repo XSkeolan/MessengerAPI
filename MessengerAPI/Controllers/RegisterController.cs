@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace MessengerAPI.Controllers
 {
-    [Route("api/singUp")]
+    [Route("public/[controller]")]
     [ApiController]
     public class RegisterController : ControllerBase
     {

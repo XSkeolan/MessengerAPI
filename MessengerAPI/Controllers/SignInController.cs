@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace MessengerAPI.Controllers
 {
-    [Route("api/signIn")]
+    [Route("api/signin")]
     [ApiController]
     public class SignInController : ControllerBase
     {
@@ -18,7 +18,9 @@ namespace MessengerAPI.Controllers
             _signInService = signInService;
         }
 
+        [AllowAnonymous]
         [HttpPost]
+        [Route("public")]
         public async Task<IActionResult> SignIn(SignInRequest inputUser)
         {
             if (!Regex.IsMatch(inputUser.Phonenumber, @"\d{11}") || inputUser.Phonenumber.Length != 11)
@@ -46,7 +48,7 @@ namespace MessengerAPI.Controllers
         }
 
         [Authorize]
-        [HttpGet("TestKey")]
+        [HttpGet("private")]
         public IActionResult GetRole()
         {
             return Ok("Ваша роль: администратор");
