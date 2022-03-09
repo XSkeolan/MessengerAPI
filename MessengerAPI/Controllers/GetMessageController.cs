@@ -14,10 +14,11 @@ namespace MessengerAPI.Controllers
         {
             _messageService = messageService;
         }
+
         [HttpGet]
         public async Task<IActionResult> GetMessages(Guid companionId)
         {
-            return Ok(await _messageService.GetMessagesAsync(companionId));
+            return Ok(await _messageService.GetMessagesAsync(Guid.Empty,companionId));
         }
     }
 }

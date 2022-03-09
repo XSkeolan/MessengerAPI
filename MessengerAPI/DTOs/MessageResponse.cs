@@ -1,4 +1,6 @@
-﻿namespace MessengerAPI.DTOs
+﻿using MessengerAPI.Models;
+
+namespace MessengerAPI.DTOs
 {
     public class MessageResponse
     {
@@ -7,5 +9,6 @@
         public Guid DestinationId { get; set; }
         public string Message { get; set; }
         public DateTime Date { get; set; }
+        public DestinationType DestinationType { get; set; }
     }
 }

@@ -3,9 +3,9 @@
     public class SignInResponseUserInfo
     {
         /// <summary>
-        /// Идентификатор сессии в которую вошел пользователь
+        /// Токен авторизации
         /// </summary>
-        public Guid SessionId { get; set; }
+        public string Token { get; set; }
         /// <summary>
         /// Пользователь вошедший в учетную запись
         /// </summary>

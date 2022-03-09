@@ -13,5 +13,6 @@
         public const string EMPTY_MESSAGE = "Message is empty";
         public const string MESSAGE_NOT_FOUND = "Message not found";
         public const string DESTINATION_NOT_FOUND = "Destination of message not found";
+        public const string TOKEN_EXPIRED = "The token has expired.Update Token";
     }
 }

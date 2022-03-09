@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
 using MessengerAPI.DTOs;
 using MessengerAPI.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MessengerAPI.Controllers
 {
@@ -42,6 +43,13 @@ namespace MessengerAPI.Controllers
             {
                 return BadRequest(ex.Message);
             }
+        }
+
+        [Authorize]
+        [HttpGet("TestKey")]
+        public IActionResult GetRole()
+        {
+            return Ok("Ваша роль: администратор");
         }
     }
 }

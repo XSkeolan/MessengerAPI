@@ -17,8 +17,9 @@ namespace MessengerAPI.Services
             _chatRepository = chatRepository;
         }
 
-        public async Task<MessageResponse> SendMessageAsync(Message message)
+        public async Task<MessageResponse> SendMessageAsync(Guid sessionId, Message message)
         {
+
             bool destinationExists = false;
             if (message.DestinationType == DestinationType.User)
             {
@@ -28,10 +29,14 @@ namespace MessengerAPI.Services
             {
                 destinationExists = await _chatRepository.GetAsync(message.Destination) == null;
             }
-
-            if (destinationExists || await _userRepository.GetAsync(message.From) == null)
+            if (destinationExists)
             {
                 throw new ArgumentException(ResponseErrors.DESTINATION_NOT_FOUND);
+            }
+
+            if (await _userRepository.GetAsync(message.From) == null)
+            {
+                throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
             }
             if (_messageRepository.GetAsync(message.OriginalMessageId ?? Guid.Empty) == null)
             {
@@ -46,11 +51,12 @@ namespace MessengerAPI.Services
                 FromId = message.From, 
                 Message = message.Text, 
                 Date = message.DateSend, 
-                DestinationId = message.Destination
+                DestinationId = message.Destination,
+                DestinationType = message.DestinationType
             };
         }
 
-        public async Task<List<MessageResponse>> GetMessagesAsync(Guid destinationId)
+        public async Task<List<MessageResponse>> GetMessagesAsync(Guid sessionId, Guid destinationId)
         {
             List<MessageResponse> responses = new List<MessageResponse>();
             IEnumerable<Message> messages = await _messageRepository.GetMessagesByDestination(destinationId);

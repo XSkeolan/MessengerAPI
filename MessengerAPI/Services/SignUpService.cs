@@ -40,7 +40,7 @@ namespace MessengerAPI.Services
                 IsConfirmed = false
             };
 
-            return new SignInResponseUserInfo { SessionId = session.Id, User = responseUser };
+            return new SignInResponseUserInfo { User = responseUser };
         }
     }
 }

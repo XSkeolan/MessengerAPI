@@ -1,6 +1,11 @@
 ﻿using MessengerAPI.DTOs;
 using MessengerAPI.Interfaces;
 using MessengerAPI.Models;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace MessengerAPI.Services
 {
@@ -8,11 +13,19 @@ namespace MessengerAPI.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly ISessionRepository _sessionRepository;
+        private readonly string _issuer;
+        private readonly string _audience;
+        private readonly string _key;
+        private readonly int _expires;
 
-        public SignInService(IUserRepository userRepository, ISessionRepository sessionRepository)
+        public SignInService(IUserRepository userRepository, ISessionRepository sessionRepository, IOptions<JWTOptions> options)
         {
             _userRepository = userRepository;
             _sessionRepository = sessionRepository;
+            _issuer = options.Value.Issuer;
+            _audience = options.Value.Audience;
+            _key = options.Value.Key;
+            _expires = options.Value.Expires;
         }
 
         public async Task<SignInResponseUserInfo> SignIn(string phonenumber, string password)
@@ -23,12 +36,22 @@ namespace MessengerAPI.Services
 
             Password.VerifyHashedPassword(user.Password, password);
 
-            Session session = new Session { DateStart = DateTime.Now, UserId = user.Id };
+            Session session = new Session { DateStart = DateTime.UtcNow, UserId = user.Id, DateEnd = DateTime.UtcNow.Add(TimeSpan.FromMinutes(_expires)) };
             await _sessionRepository.CreateAsync(session);
+
+            var identity = GetIdentity(session);
+            var jwt = new JwtSecurityToken(
+                    issuer: _issuer,
+                    audience: _audience,
+                    notBefore: DateTime.UtcNow,
+                    claims: identity.Claims,
+                    expires: DateTime.UtcNow.Add(TimeSpan.FromMinutes(_expires)),
+                    signingCredentials: new SigningCredentials(new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_key)), SecurityAlgorithms.HmacSha256));
+            var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
 
             return new SignInResponseUserInfo
             {
-                SessionId = session.Id,
+                Token = encodedJwt,
                 User = new UserResponse
                 {
                     Id = user.Id,
@@ -40,6 +63,20 @@ namespace MessengerAPI.Services
                     IsConfirmed = user.IsConfirmed
                 }
             };
+        }
+
+        private ClaimsIdentity GetIdentity(Session session)
+        {
+            var claims = new List<Claim>
+                {
+                    new Claim(ClaimsIdentity.DefaultNameClaimType, session.Id.ToString(), "Guid"),
+                    new Claim("DateEnd", session.DateEnd.ToString(), "DateTime"),
+                    new Claim(ClaimsIdentity.DefaultRoleClaimType, "user"),
+                };
+            ClaimsIdentity claimsIdentity =
+            new ClaimsIdentity(claims, "Token", ClaimsIdentity.DefaultNameClaimType,
+                ClaimsIdentity.DefaultRoleClaimType);
+            return claimsIdentity;
         }
     }
 }

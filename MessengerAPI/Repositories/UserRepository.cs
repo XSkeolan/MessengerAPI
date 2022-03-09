@@ -14,7 +14,7 @@ namespace MessengerAPI.Repositories
             user.Id = await Execute(async (conn) =>
             {
                 return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO Users (nickname, password, phonenumber, name, surname) " +
-                "VALUES(@Nickname, @HashedPassword, @Phonenumber, @Name, @Surname) RETURNING id", user);
+                "VALUES(@Nickname, @Password, @Phonenumber, @Name, @Surname) RETURNING id", user);
             });
         }
         

@@ -18,7 +18,7 @@ namespace MessengerAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SendMessage(MessageRequest request)
+        public async Task<IActionResult> SendMessage(Guid sessionId, MessageRequest request)
         {
             if(request.Message == string.Empty)
             {
@@ -36,7 +36,7 @@ namespace MessengerAPI.Controllers
                     Text = request.Message,
                     OriginalMessageId = request.ReplyMessageId 
                 };
-                return Ok(await _messageService.SendMessageAsync(message));
+                return Ok(await _messageService.SendMessageAsync(sessionId, message));
             }
             catch(ArgumentException ex)
             {

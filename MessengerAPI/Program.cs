@@ -2,6 +2,11 @@ using MessengerAPI;
 using MessengerAPI.Interfaces;
 using MessengerAPI.Services;
 using MessengerAPI.Repositories;
+using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using MessengerAPI.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,7 +15,33 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(swagger =>
+{
+    swagger.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT Authorization header using the Bearer scheme. \r\n\r\n Enter 'Bearer' [space] and then your token in the text input below.\r\n\r\nExample: \"Bearer 12345abcdef\"",
+    });
+    swagger.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
+
 builder.Services.AddTransient<ISignUpService, SignUpService>();
 builder.Services.AddTransient<ISignInService, SignInService>();
 builder.Services.AddTransient<ISignOutService, SignOutService>();
@@ -26,11 +57,39 @@ builder.Services.AddTransient<IUserTypeRepository, UserTypeRepository>();
 builder.Services.AddTransient<IMessageRepository, MessageRepository>();
 builder.Services.AddTransient<IMessageService, MessageService>();
 
+builder.Services.AddTransient<IUserService, UserService>();
+
 
 builder.Host.ConfigureServices((host, services) =>
 {
     IConfigurationSection section = host.Configuration.GetSection("ConnectionStrings");
     services.Configure<Connections>(section);
+    section = host.Configuration.GetSection("Jwt");
+    services.Configure<JWTOptions>(section);
+
+    services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            // укзывает, будет ли валидироваться издатель при валидации токена
+            ValidateIssuer = true,
+            // строка, представляющая издателя
+            ValidIssuer = host.Configuration["Jwt:Issuer"],
+
+            // будет ли валидироваться потребитель токена
+            ValidateAudience = true,
+            // установка потребителя токена
+            ValidAudience = host.Configuration["Jwt:Audience"],
+            // будет ли валидироваться время существования
+            ValidateLifetime = true,
+
+            // установка ключа безопасности
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(host.Configuration["Jwt:Key"])),
+            // валидация ключа безопасности
+            ValidateIssuerSigningKey = true,
+        };
+    });
 });
 var app = builder.Build();
 
@@ -40,10 +99,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
+
+app.Map("/private", context =>
+{
+    app.UseMiddleware<JwtMiddleware>();
+});
 
 app.MapControllers();
 
