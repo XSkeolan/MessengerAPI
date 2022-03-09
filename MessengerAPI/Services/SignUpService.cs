@@ -1,7 +1,6 @@
 ﻿using MessengerAPI.Models;
 using MessengerAPI.DTOs;
 using MessengerAPI.Interfaces;
-using System.Security.Cryptography;
 
 namespace MessengerAPI.Services
 {
@@ -16,18 +15,14 @@ namespace MessengerAPI.Services
             _sessions = sessionRepository;
         }
 
-        public async Task<SignInResponseUserInfo> SignUp(User user, string enteringDeviceName, string password)
+        public async Task<UserResponse> SignUp(User user, string enteringDeviceName, string password)
         {
             if(await _users.FindByPhonenumberAsync(user.Phonenumber) != null || 
                 await _users.FindByNicknameAsync(user.Nickname) != null)
                 throw new ArgumentException(ResponseErrors.ALREADY_EXISTS);
 
             user.Password = Password.GetHasedPassword(password);
-
             await _users.CreateAsync(user);
-
-            Session session = new Session { UserId = user.Id, DateStart=DateTime.Now, DeviceName = enteringDeviceName };
-            await _sessions.CreateAsync(session);
 
             UserResponse responseUser = new UserResponse
             {
@@ -40,7 +35,7 @@ namespace MessengerAPI.Services
                 IsConfirmed = false
             };
 
-            return new SignInResponseUserInfo { User = responseUser };
+            return responseUser;
         }
     }
 }

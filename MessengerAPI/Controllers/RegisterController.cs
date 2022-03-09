@@ -3,11 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
 using MessengerAPI.Interfaces;
 using MessengerAPI.Models;
-using System.IdentityModel.Tokens.Jwt;
-using System.Text;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 
 namespace MessengerAPI.Controllers
@@ -17,16 +12,10 @@ namespace MessengerAPI.Controllers
     public class RegisterController : ControllerBase
     {
         private readonly ISignUpService _signUpService;
-        private readonly string _jwtKey;
-        private readonly string _jwtIssuer;
-        private readonly string _jwtAudience;
 
-        public RegisterController(ISignUpService signUp, IOptions<JWTOptions> options)
+        public RegisterController(ISignUpService signUp)
         {
             _signUpService = signUp;
-            _jwtKey = options.Value.Key;
-            _jwtIssuer = options.Value.Issuer;
-            _jwtAudience = options.Value.Audience;
         }
 
         [AllowAnonymous]
@@ -65,37 +54,13 @@ namespace MessengerAPI.Controllers
 
             try
             {
-                SignInResponseUserInfo signIn = await _signUpService.SignUp(user, Request.Headers.UserAgent, inputUser.Password);
-                signIn.Token = GenerateJwtToken(user.Phonenumber);
-                return Ok(signIn);
+                UserResponse signUp = await _signUpService.SignUp(user, Request.Headers.UserAgent, inputUser.Password);
+                return Ok(signUp);
             }
             catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
             }
-        }
-
-        private string GenerateJwtToken(string userName)
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_jwtKey);
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new[] { new Claim("phonenumber", userName) }),
-                Expires = DateTime.UtcNow.AddHours(1),
-                Issuer = _jwtIssuer,
-                Audience = _jwtAudience,
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
-        }
-
-        [Authorize]
-        [HttpGet(nameof(GetResult))]
-        public IActionResult GetResult()
-        {
-            return Ok("API Validated");
         }
     }
 }
