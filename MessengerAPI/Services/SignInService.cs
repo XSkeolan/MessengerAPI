@@ -28,7 +28,7 @@ namespace MessengerAPI.Services
             _expires = options.Value.Expires;
         }
 
-        public async Task<SignInResponseUserInfo> SignIn(string phonenumber, string password)
+        public async Task<SignInResponseUserInfo> SignIn(string phonenumber, string password, string deviceName)
         {
             User? user = await _userRepository.FindByPhonenumberAsync(phonenumber);
             if (user == null)
@@ -36,7 +36,7 @@ namespace MessengerAPI.Services
 
             Password.VerifyHashedPassword(user.Password, password);
 
-            Session session = new Session { DateStart = DateTime.UtcNow, UserId = user.Id, DateEnd = DateTime.UtcNow.Add(TimeSpan.FromMinutes(_expires)) };
+            Session session = new Session { DateStart = DateTime.UtcNow, UserId = user.Id, DeviceName=deviceName, DateEnd = DateTime.UtcNow.Add(TimeSpan.FromMinutes(_expires)) };
             await _sessionRepository.CreateAsync(session);
 
             var identity = GetIdentity(session);

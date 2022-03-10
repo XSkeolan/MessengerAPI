@@ -1,12 +1,13 @@
 ﻿using MessengerAPI.DTOs;
 using MessengerAPI.Models;
 using MessengerAPI.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MessengerAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/private")]
     [ApiController]
     public class CreateMessageController : ControllerBase
     {
@@ -18,27 +19,31 @@ namespace MessengerAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SendMessage(Guid sessionId, MessageRequest request)
+        [Authorize]
+        [Route("sendMessage")]
+        public async Task<IActionResult> SendMessage(MessageRequest request)
         {
-            if(request.Message == string.Empty)
+            if (request.Message == string.Empty)
             {
                 return BadRequest(ResponseErrors.EMPTY_MESSAGE);
             }
 
+            Guid userId = Guid.Parse(HttpContext.Items["User"].ToString());
+
             try
             {
-                Message message = new Message 
-                { 
-                    DateSend = DateTime.Now,
-                    From = request.From,
-                    Destination =request.Destination,
+                Message message = new Message
+                {
+                    DateSend = DateTime.UtcNow,
+                    From = userId,
+                    Destination = request.Destination,
                     DestinationType = request.DestinationType,
                     Text = request.Message,
-                    OriginalMessageId = request.ReplyMessageId 
+                    ReplyMessageId = request.ReplyMessageId
                 };
-                return Ok(await _messageService.SendMessageAsync(sessionId, message));
+                return Ok(await _messageService.SendMessageAsync(message));
             }
-            catch(ArgumentException ex)
+            catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
             }

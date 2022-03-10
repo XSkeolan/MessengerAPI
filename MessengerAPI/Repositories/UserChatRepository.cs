@@ -5,9 +5,9 @@ using Microsoft.Extensions.Options;
 
 namespace MessengerAPI.Repositories
 {
-    public class UserGroupRepository : BaseRepository<UserGroup>, IUserChatRepository
+    public class UserChatRepository : BaseRepository<UserGroup>, IUserChatRepository
     {
-        public UserGroupRepository(IOptions<Connections> options) : base(options) { }
+        public UserChatRepository(IOptions<Connections> options) : base(options) { }
 
         public override async Task CreateAsync(UserGroup userChat)
         {
@@ -31,6 +31,14 @@ namespace MessengerAPI.Repositories
             return await Execute(async (conn) =>
             {
                 return await conn.QueryFirstOrDefaultAsync<UserGroup>("SELECT * FROM usergroup WHERE id=@Id AND isdeleted=false", new { id });
+            });
+        }
+
+        public async Task<IEnumerable<Guid>> GetUserChats(Guid userId)
+        {
+            return await Execute(async (conn) =>
+            {
+                return await conn.QueryAsync<Guid>("SELECT groupid FROM usergroup WHERE userid=@Id AND isdeleted=false", new { Id=userId });
             });
         }
     }

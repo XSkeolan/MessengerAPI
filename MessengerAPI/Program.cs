@@ -51,7 +51,7 @@ builder.Services.AddTransient<ISessionRepository, SessionRepository>();
 
 builder.Services.AddTransient<IChatRepository, ChatRepository>();
 builder.Services.AddTransient<IChatService, ChatService>();
-builder.Services.AddTransient<IUserChatRepository, UserGroupRepository>();
+builder.Services.AddTransient<IUserChatRepository, UserChatRepository>();
 builder.Services.AddTransient<IUserTypeRepository, UserTypeRepository>();
 
 builder.Services.AddTransient<IMessageRepository, MessageRepository>();
@@ -103,7 +103,9 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.UseMiddleware<JwtMiddleware>();
+
 app.MapControllers();
 
 app.Run();

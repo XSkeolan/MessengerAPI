@@ -14,5 +14,6 @@
         public const string MESSAGE_NOT_FOUND = "Message not found";
         public const string DESTINATION_NOT_FOUND = "Destination of message not found";
         public const string TOKEN_EXPIRED = "The token has expired.Update Token";
+        public const string USER_HAS_NOT_ACCESS = "You have not access to message";
     }
 }

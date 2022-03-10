@@ -9,17 +9,18 @@ namespace MessengerAPI.Services
         private readonly IMessageRepository _messageRepository;
         private readonly IUserRepository _userRepository;
         private readonly IChatRepository _chatRepository;
+        private readonly IUserChatRepository _userChatRepository;
 
-        public MessageService(IMessageRepository messages, IUserRepository userRepository, IChatRepository chatRepository)
+        public MessageService(IMessageRepository messages, IUserRepository userRepository, IChatRepository chatRepository, IUserChatRepository userChatRepository)
         {
             _messageRepository = messages;
             _userRepository = userRepository;
             _chatRepository = chatRepository;
+            _userChatRepository = userChatRepository;
         }
 
-        public async Task<MessageResponse> SendMessageAsync(Guid sessionId, Message message)
+        public async Task<MessageResponse> SendMessageAsync(Message message)
         {
-
             bool destinationExists = false;
             if (message.DestinationType == DestinationType.User)
             {
@@ -34,13 +35,19 @@ namespace MessengerAPI.Services
                 throw new ArgumentException(ResponseErrors.DESTINATION_NOT_FOUND);
             }
 
-            if (await _userRepository.GetAsync(message.From) == null)
+            if (message.OriginalMessageId != null)
             {
-                throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
+                if (_messageRepository.GetAsync(message.OriginalMessageId ?? Guid.Empty) == null)
+                {
+                    throw new ArgumentException(ResponseErrors.MESSAGE_NOT_FOUND);
+                }
             }
-            if (_messageRepository.GetAsync(message.OriginalMessageId ?? Guid.Empty) == null)
+            if(message.ReplyMessageId != null)
             {
-                throw new ArgumentException(ResponseErrors.MESSAGE_NOT_FOUND);
+                if (_messageRepository.GetAsync(message.ReplyMessageId ?? Guid.Empty) == null)
+                {
+                    throw new ArgumentException(ResponseErrors.MESSAGE_NOT_FOUND);
+                }
             }
 
             await _messageRepository.CreateAsync(message);
@@ -56,13 +63,40 @@ namespace MessengerAPI.Services
             };
         }
 
-        public async Task<List<MessageResponse>> GetMessagesAsync(Guid sessionId, Guid destinationId)
+        public async Task<List<MessageResponse>> GetMessagesAsync(Guid userId, IEnumerable<Guid> ids)
         {
             List<MessageResponse> responses = new List<MessageResponse>();
-            IEnumerable<Message> messages = await _messageRepository.GetMessagesByDestination(destinationId);
-            foreach (var message in messages)
+            IEnumerable<Guid> chatsDestination = await _userChatRepository.GetUserChats(userId);
+            foreach (var id in ids.Distinct())
             {
-                responses.Add(new MessageResponse { Message = message.Text, Date = message.DateSend, DestinationId = message.Destination, FromId=message.From, MessageId = message.Id });
+                Message message = await _messageRepository.GetAsync(id);
+                if(message == null)
+                {
+                    continue;
+                }
+                
+                if(message.DestinationType == DestinationType.User)
+                {
+                    if(message.Destination == userId || message.From == userId)
+                    {
+                        responses.Add(new MessageResponse { Message = message.Text, Date = message.DateSend, DestinationId = message.Destination, DestinationType=message.DestinationType, FromId = message.From, MessageId = message.Id });
+                    }
+                    else
+                    {
+                        throw new Exception(ResponseErrors.USER_HAS_NOT_ACCESS);
+                    }
+                }
+                else if(message.DestinationType == DestinationType.Chat)
+                {
+                    if(chatsDestination.Count(x=> x==message.Destination) == 0)
+                    {
+                        throw new Exception(ResponseErrors.USER_HAS_NOT_ACCESS);
+                    }
+                    else
+                    {
+                        responses.Add(new MessageResponse { Message = message.Text, Date = message.DateSend, DestinationId = message.Destination, DestinationType = message.DestinationType, FromId = message.From, MessageId = message.Id });
+                    }
+                }
             }
             return responses;
         }

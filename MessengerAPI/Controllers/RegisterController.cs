@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace MessengerAPI.Controllers
 {
-    [Route("public/[controller]")]
+    [Route("api/public")]
     [ApiController]
     public class RegisterController : ControllerBase
     {
@@ -20,6 +20,7 @@ namespace MessengerAPI.Controllers
 
         [AllowAnonymous]
         [HttpPost]
+        [Route("register")]
         public async Task<IActionResult> Register(SignUpRequestUser inputUser)
         {
             if (!Regex.IsMatch(inputUser.Phonenumber, @"\d{11}") || inputUser.Phonenumber.Length != 11)

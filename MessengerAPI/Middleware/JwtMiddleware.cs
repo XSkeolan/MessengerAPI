@@ -20,12 +20,11 @@ namespace MessengerAPI.Middleware
         public async Task InvokeAsync(HttpContext context)
         {
             Console.WriteLine(context.Request.Path.Value);
+            Session session;
             if (context.Request.Path.Value.StartsWith("/api/signin/private"))
             {
                 string jwtToken = context.Request.Headers.Authorization;
                 var token = jwtToken.Split(' ')[1];
-                Console.WriteLine(jwtToken);
-                Console.WriteLine(token);
 
                 var handler = new JwtSecurityTokenHandler();
                 var jsonToken = handler.ReadToken(token);
@@ -33,19 +32,26 @@ namespace MessengerAPI.Middleware
 
                 Guid sessionId = Guid.Parse(tokenS.Claims.First(claim => claim.Type == ClaimsIdentity.DefaultNameClaimType).Value);
                 DateTime dateEnd = DateTime.Parse(tokenS.Claims.First(claim => claim.Type == "DateEnd").Value);
+                Console.WriteLine(sessionId);
+                Console.WriteLine(dateEnd);
 
-                if (dateEnd > DateTime.Now)
+                if (dateEnd > DateTime.UtcNow)
                 {
                     context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
                     await context.Response.WriteAsync(ResponseErrors.TOKEN_EXPIRED);
                 }
                 else
                 {
-                    Session session = await _sessionRepository.GetAsync(sessionId);
+                    session = await _sessionRepository.GetAsync(sessionId);
                     if (session == null)
                     {
                         context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                         await context.Response.WriteAsync(ResponseErrors.SESSION_NOT_FOUND);
+                    }
+                    else
+                    {
+                        context.Items["User"] = session.UserId;
+                        context.Items["Session"] = session.Id;
                     }
                 }
             }

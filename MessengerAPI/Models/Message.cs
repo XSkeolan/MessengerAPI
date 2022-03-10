@@ -9,5 +9,6 @@
         public DestinationType DestinationType { get; set; }
         public bool IsPinned { get; set; }
         public Guid? OriginalMessageId { get; set; }
+        public Guid? ReplyMessageId { get; set; }
     }
 }

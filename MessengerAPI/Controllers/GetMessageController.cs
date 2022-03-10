@@ -1,10 +1,11 @@
 ﻿using MessengerAPI.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MessengerAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/private")]
     [ApiController]
     public class GetMessageController : ControllerBase
     {
@@ -16,9 +17,19 @@ namespace MessengerAPI.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetMessages(Guid companionId)
+        [Authorize]
+        [Route("getMessages")]
+        public async Task<IActionResult> GetMessages(IEnumerable<Guid> ids)
         {
-            return Ok(await _messageService.GetMessagesAsync(Guid.Empty,companionId));
+            Guid userId = Guid.Parse(HttpContext.Items["User"].ToString());
+            try
+            {
+                return Ok(await _messageService.GetMessagesAsync(userId, ids));
+            }
+            catch(Exception ex)
+            {
+                return Forbid(ex.Message);
+            }
         }
     }
 }

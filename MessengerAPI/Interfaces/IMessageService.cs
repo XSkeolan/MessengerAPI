@@ -5,7 +5,7 @@ namespace MessengerAPI.Services
 {
     public interface IMessageService
     {
-        Task<MessageResponse> SendMessageAsync(Guid sessionId, Message message);
-        Task<List<MessageResponse>> GetMessagesAsync(Guid sessionId, Guid companionId);
+        Task<MessageResponse> SendMessageAsync(Message message);
+        Task<List<MessageResponse>> GetMessagesAsync(Guid userId, IEnumerable<Guid> ids);
     }
 }

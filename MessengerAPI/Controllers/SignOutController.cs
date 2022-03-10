@@ -1,10 +1,10 @@
-﻿using MessengerAPI.DTOs;
-using MessengerAPI.Interfaces;
+﻿using MessengerAPI.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MessengerAPI.Controllers
 {
-    [Route("api/signOut")]
+    [Route("api/private")]
     [ApiController]
     public class SignOutController : ControllerBase
     {
@@ -15,11 +15,15 @@ namespace MessengerAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SignOut(SignOutRequest signOutRequest)
+        [Route("signOut")]
+        [Authorize]
+        public async new Task<IActionResult> SignOut()
         {
             try
             {
-                await _signOutService.SignOut(signOutRequest.SessionId, signOutRequest.UserId);
+                Guid userId = Guid.Parse(HttpContext.Items["User"].ToString());
+                Guid sessionId = Guid.Parse(HttpContext.Items["Session"].ToString());
+                await _signOutService.SignOut(sessionId, userId);
                 return Ok();
             }
             catch

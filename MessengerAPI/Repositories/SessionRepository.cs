@@ -13,8 +13,8 @@ namespace MessengerAPI.Repositories
         {
             session.Id = await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO Sessions (datestart, userid, devicename) " +
-                    "VALUES(@DateStart, @UserId, @DeviceName) RETURNING id", session);
+                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO Sessions (datestart, userid, devicename, dateend) " +
+                    "VALUES(@DateStart, @UserId, @DeviceName, @DateEnd) RETURNING id", session);
             });
         }
 
@@ -22,7 +22,7 @@ namespace MessengerAPI.Repositories
         {
             await Execute(async (conn) =>
             {
-                return await conn.ExecuteAsync("UPDATE Sessions SET dateend=@DateEnd WHERE id=@Id AND dateend is null", new { DateEnd = DateTime.Now, Id = id });
+                return await conn.ExecuteAsync("UPDATE Sessions SET dateend=@DateEnd WHERE id=@Id", new { DateEnd = DateTime.UtcNow, Id = id });
             });
         }
 

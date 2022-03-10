@@ -1,11 +1,12 @@
 ﻿using MessengerAPI.DTOs;
 using MessengerAPI.Interfaces;
 using MessengerAPI.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MessengerAPI.Controllers
 {
-    [Route("api/createChat")]
+    [Route("api/private")]
     [ApiController]
     public class CreateChatController : ControllerBase
     {
@@ -15,7 +16,10 @@ namespace MessengerAPI.Controllers
         {
             _chatService = chatService;
         }
+
         [HttpPost]
+        [Authorize]
+        [Route("createChat")]
         public async Task<IActionResult> CreateChat(ChatRequest request)
         {
             if (request.Name == string.Empty || request.InviteUsers.Length == 0)
@@ -23,7 +27,8 @@ namespace MessengerAPI.Controllers
                 return BadRequest(ResponseErrors.INVALID_FIELDS);
             }
 
-            if (request.InviteUsers.Contains(request.AdministratorId))
+            Guid userId = Guid.Parse(HttpContext.Items["User"].ToString());
+            if (request.InviteUsers.Contains(userId))
             {
                 return BadRequest(ResponseErrors.INVALID_INVITE_USER);
             }
@@ -39,9 +44,9 @@ namespace MessengerAPI.Controllers
             { 
                 Name=request.Name, 
                 Description = request.Description, 
-                Administrator = request.AdministratorId, 
+                Administrator = userId, 
                 Photo = new InputFile("", ""), 
-                Created = DateTime.Now 
+                Created = DateTime.UtcNow 
             };
             return Ok(await _chatService.CreateChat(chat, request.InviteUsers.Distinct().ToArray()));
         }
