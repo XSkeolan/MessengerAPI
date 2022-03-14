@@ -2,6 +2,7 @@
 using Dapper;
 using MessengerAPI.Interfaces;
 using Microsoft.Extensions.Options;
+using MessengerAPI.Options;
 
 namespace MessengerAPI.Repositories
 {

@@ -3,6 +3,7 @@ using MessengerAPI.Interfaces;
 using Npgsql;
 using System.Data;
 using Microsoft.Extensions.Options;
+using MessengerAPI.Options;
 
 namespace MessengerAPI.Repositories
 {

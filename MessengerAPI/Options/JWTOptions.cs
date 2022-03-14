@@ -1,4 +1,4 @@
-﻿namespace MessengerAPI
+﻿namespace MessengerAPI.Options
 {
     public class JWTOptions
     {

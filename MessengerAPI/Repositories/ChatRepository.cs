@@ -2,6 +2,7 @@
 using MessengerAPI.Models;
 using Microsoft.Extensions.Options;
 using Dapper;
+using MessengerAPI.Options;
 
 namespace MessengerAPI.Repositories
 {
@@ -31,8 +32,7 @@ namespace MessengerAPI.Repositories
         {
             return await Execute(async (conn) =>
             {
-                IEnumerable<Chat> groups = await conn.QueryAsync<Chat>("SELECT * FROM groups WHERE id=@Id AND isdeleted=false", new { id });
-                return groups.FirstOrDefault();
+                return await conn.QueryFirstOrDefaultAsync<Chat>("SELECT * FROM groups WHERE id=@Id AND isdeleted=false", new { id });
             });
         }
     }

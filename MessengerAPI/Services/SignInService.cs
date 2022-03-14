@@ -1,6 +1,7 @@
 ﻿using MessengerAPI.DTOs;
 using MessengerAPI.Interfaces;
 using MessengerAPI.Models;
+using MessengerAPI.Options;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -45,13 +46,14 @@ namespace MessengerAPI.Services
                     audience: _audience,
                     notBefore: DateTime.UtcNow,
                     claims: identity.Claims,
-                    expires: DateTime.UtcNow.Add(TimeSpan.FromMinutes(_expires)),
+                    expires: DateTime.UtcNow.AddSeconds(_expires),
                     signingCredentials: new SigningCredentials(new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_key)), SecurityAlgorithms.HmacSha256));
             var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
 
             return new SignInResponseUserInfo
             {
                 Token = encodedJwt,
+                Expiries = _expires,
                 User = new UserResponse
                 {
                     Id = user.Id,

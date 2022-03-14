@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using MessengerAPI.Middleware;
+using MessengerAPI.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,6 +59,8 @@ builder.Services.AddTransient<IMessageRepository, MessageRepository>();
 builder.Services.AddTransient<IMessageService, MessageService>();
 
 builder.Services.AddTransient<IUserService, UserService>();
+builder.Services.AddTransient<ISendCodeService, SendCodeService>();
+builder.Services.AddTransient<IConfirmationCodeRepository, ConfirmationCodeRepository>();
 
 
 builder.Host.ConfigureServices((host, services) =>
@@ -66,6 +69,8 @@ builder.Host.ConfigureServices((host, services) =>
     services.Configure<Connections>(section);
     section = host.Configuration.GetSection("Jwt");
     services.Configure<JWTOptions>(section);
+    section = host.Configuration.GetSection("Email");
+    services.Configure<EmailOptions>(section);
 
     services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
     {

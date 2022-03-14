@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using MessengerAPI.Interfaces;
 using MessengerAPI.Models;
+using MessengerAPI.Options;
 using Microsoft.Extensions.Options;
 
 namespace MessengerAPI.Repositories
@@ -40,6 +41,15 @@ namespace MessengerAPI.Repositories
             return await Execute(async (conn) =>
             {
                 IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE phonenumber=@Phonenumber", new { phonenumber });
+                return users.FirstOrDefault();
+            });
+        }
+
+        public async Task<User?> FindByConfirmedEmailAsync(string email)
+        {
+            return await Execute(async (conn) =>
+            {
+                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE email=@Email AND isconfirmed=@IsConfirmed", new { Email=email, IsConfirmed=true });
                 return users.FirstOrDefault();
             });
         }
