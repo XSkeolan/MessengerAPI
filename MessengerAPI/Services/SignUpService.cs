@@ -6,25 +6,25 @@ namespace MessengerAPI.Services
 {
     public class SignUpService: ISignUpService
     {
-        private readonly IUserRepository _users;
-        private readonly ISessionRepository _sessions;
+        private readonly IUserRepository _userRepository;
 
-        public SignUpService(IUserRepository userRepository, ISessionRepository sessionRepository)
+        public SignUpService(IUserRepository userRepository)
         {
-            _users = userRepository;
-            _sessions = sessionRepository;
+            _userRepository = userRepository;
         }
 
-        public async Task<UserResponse> SignUp(User user, string enteringDeviceName, string password)
+        public async Task<UserCreateResponse> SignUp(User user, string password)
         {
-            if(await _users.FindByPhonenumberAsync(user.Phonenumber) != null || 
-                await _users.FindByNicknameAsync(user.Nickname) != null)
+            if (await _userRepository.FindByPhonenumberAsync(user.Phonenumber) != null ||
+                await _userRepository.FindByNicknameAsync(user.Nickname) != null)
+            {
                 throw new ArgumentException(ResponseErrors.ALREADY_EXISTS);
+            }
 
             user.Password = Password.GetHasedPassword(password);
-            await _users.CreateAsync(user);
+            await _userRepository.CreateAsync(user);
 
-            UserResponse responseUser = new UserResponse
+            UserCreateResponse responseUser = new UserCreateResponse
             {
                 Id = user.Id,
                 Nickname = user.Nickname,

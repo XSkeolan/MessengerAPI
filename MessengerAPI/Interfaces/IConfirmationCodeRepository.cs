@@ -7,5 +7,6 @@ namespace MessengerAPI.Repositories
     {
         public Task<bool> UnUsedCodeExists(string code);
         public Task<bool> UserHasUnUsedCode(Guid userId);
+        public Task UpdateAsync(Guid id, string code);
     }
 }

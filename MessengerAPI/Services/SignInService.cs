@@ -33,7 +33,13 @@ namespace MessengerAPI.Services
         {
             User? user = await _userRepository.FindByPhonenumberAsync(phonenumber);
             if (user == null)
+            {
                 throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
+            }
+            if(await _sessionRepository.GetUnfinishedOnDeviceAsync(deviceName) != null)
+            {
+                throw new InvalidOperationException(ResponseErrors.USER_ALREADY_AUTHORIZE);
+            }
 
             Password.VerifyHashedPassword(user.Password, password);
 
@@ -54,7 +60,7 @@ namespace MessengerAPI.Services
             {
                 Token = encodedJwt,
                 Expiries = _expires,
-                User = new UserResponse
+                User = new UserCreateResponse
                 {
                     Id = user.Id,
                     Nickname = user.Nickname,

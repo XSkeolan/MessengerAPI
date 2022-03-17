@@ -7,13 +7,13 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace MessengerAPI.Controllers
 {
-    [Route("api/private")]
+    [Route("api/private/messages")]
     [ApiController]
-    public class CreateMessageController : ControllerBase
+    public class MessageController : ControllerBase
     {
         private readonly IMessageService _messageService;
 
-        public CreateMessageController(IMessageService messageService)
+        public MessageController(IMessageService messageService)
         {
             _messageService = messageService;
         }
@@ -23,21 +23,17 @@ namespace MessengerAPI.Controllers
         [Route("sendMessage")]
         public async Task<IActionResult> SendMessage(MessageRequest request)
         {
-            if (request.Message == string.Empty)
+            if (string.IsNullOrEmpty(request.Message))
             {
                 return BadRequest(ResponseErrors.EMPTY_MESSAGE);
             }
-
-            Guid userId = Guid.Parse(HttpContext.Items["User"].ToString());
 
             try
             {
                 Message message = new Message
                 {
                     DateSend = DateTime.UtcNow,
-                    From = userId,
                     Destination = request.Destination,
-                    DestinationType = request.DestinationType,
                     Text = request.Message,
                     ReplyMessageId = request.ReplyMessageId
                 };
@@ -46,6 +42,22 @@ namespace MessengerAPI.Controllers
             catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet]
+        [Authorize]
+        [Route("getMessages")]
+        public async Task<IActionResult> GetMessages(IEnumerable<Guid> ids)
+        {
+            Guid userId = Guid.Parse(HttpContext.Items["User"].ToString());
+            try
+            {
+                return Ok(await _messageService.GetMessagesAsync(userId, ids));
+            }
+            catch (Exception ex)
+            {
+                return Forbid(ex.Message);
             }
         }
     }

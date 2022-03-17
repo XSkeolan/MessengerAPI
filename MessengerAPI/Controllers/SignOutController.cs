@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace MessengerAPI.Controllers
 {
-    [Route("api/private")]
+    [Route("api/private/signOut")]
     [ApiController]
     public class SignOutController : ControllerBase
     {
@@ -15,7 +15,6 @@ namespace MessengerAPI.Controllers
         }
 
         [HttpPost]
-        [Route("signOut")]
         [Authorize]
         public async new Task<IActionResult> SignOut()
         {

@@ -5,6 +5,6 @@ namespace MessengerAPI.Interfaces
 {
     public interface ISignUpService
     {
-        Task<UserResponse> SignUp(User user, string enteringDeviceName, string password);
+        Task<UserCreateResponse> SignUp(User user, string password);
     }
 }

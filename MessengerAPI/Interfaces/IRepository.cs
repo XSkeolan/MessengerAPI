@@ -2,8 +2,8 @@
 {
     public interface IRepository<TEntity>
     {
-        public abstract Task CreateAsync(TEntity entity);
-        public abstract Task DeleteAsync(Guid id);
-        public abstract Task<TEntity> GetAsync(Guid id);
+        public Task CreateAsync(TEntity entity);
+        public Task DeleteAsync(Guid id);
+        public Task<TEntity> GetAsync(Guid id);
     }
 }

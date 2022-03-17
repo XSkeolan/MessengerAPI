@@ -11,13 +11,13 @@ namespace MessengerAPI.Services
         {
             _userRepository = userRepository;
         }
-        public async Task<UserResponse> GetUserByPhonenumber(string phoneNumber)
+        public async Task<UserCreateResponse> GetUserByPhonenumber(string phoneNumber)
         {
             var user = await _userRepository.FindByPhonenumberAsync(phoneNumber);
             if (user == null)
                 throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
 
-            return new UserResponse
+            return new UserCreateResponse
             {
                 Id = user.Id,
                 IsConfirmed = user.IsConfirmed,

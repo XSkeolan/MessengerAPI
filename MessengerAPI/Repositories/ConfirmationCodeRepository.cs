@@ -34,11 +34,11 @@ namespace MessengerAPI.Repositories
             });
         }
 
-        public async Task<bool> UnUsedCodeExists(string code)
+        public async Task<bool> UnUsedCodeExists(string codeHash)
         {
             return await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<ConfirmationCode>("SELECT * FROM confirmationcode WHERE code=@Code AND isused=false AND isdeleted=false", new { Code = code }) != null;
+                return await conn.QueryFirstOrDefaultAsync<ConfirmationCode>("SELECT * FROM confirmationcode WHERE code=@Code AND isused=false AND isdeleted=false", new { Code = codeHash }) != null;
             });
         }
 
@@ -47,6 +47,14 @@ namespace MessengerAPI.Repositories
             return await Execute(async (conn) =>
             {
                 return await conn.QueryFirstOrDefaultAsync<ConfirmationCode>("SELECT * FROM confirmationcode WHERE userid=@UserId AND isdeleted=false AND isused=false", new { UserId = userId }) != null;
+            });
+        }
+
+        public async Task UpdateAsync(Guid id, string codeHash)
+        {
+            await Execute(async (conn) =>
+            {
+                return await conn.ExecuteAsync("UPDATE confirmationcode SET code=@Code WHERE id=@Id AND isdeleted=false", new { Code = codeHash, Id = id });
             });
         }
     }

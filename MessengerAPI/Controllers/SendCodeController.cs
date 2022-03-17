@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MessengerAPI.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MessengerAPI.Controllers
 {
@@ -15,6 +16,7 @@ namespace MessengerAPI.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> SendCode()
         {
             try

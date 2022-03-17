@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using MessengerAPI.Middleware;
 using MessengerAPI.Options;
+using MessengerAPI.Contexts;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,6 +62,9 @@ builder.Services.AddTransient<IMessageService, MessageService>();
 builder.Services.AddTransient<IUserService, UserService>();
 builder.Services.AddTransient<ISendCodeService, SendCodeService>();
 builder.Services.AddTransient<IConfirmationCodeRepository, ConfirmationCodeRepository>();
+builder.Services.AddTransient<IChatTypeRepository, ChatTypeRepository>();
+
+builder.Services.AddScoped<IServiceContext, ServiceContext>();
 
 
 builder.Host.ConfigureServices((host, services) =>
@@ -71,6 +75,8 @@ builder.Host.ConfigureServices((host, services) =>
     services.Configure<JWTOptions>(section);
     section = host.Configuration.GetSection("Email");
     services.Configure<EmailOptions>(section);
+
+    services.AddScoped<IServiceContext, ServiceContext>();
 
     services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
     {

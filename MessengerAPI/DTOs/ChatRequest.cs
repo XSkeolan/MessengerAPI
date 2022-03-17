@@ -6,5 +6,6 @@
         public string? Description { get; set; }
         //public byte[]? Photo { get; set; }
         public Guid[] InviteUsers { get; set; }
+        public Guid ChatType { get; set; }
     }
 }

@@ -15,7 +15,7 @@ namespace MessengerAPI.Repositories
             userChat.Id = await Execute(async (conn) =>
             {
                 return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO usergroup (userid, groupid, usertypeid) " +
-                "VALUES(@UserId, @GroupId, @UserTypeId) RETURNING id", userChat);
+                "VALUES(@UserId, @ChatId, @UserTypeId) RETURNING id", userChat);
             });
         }
 
@@ -40,6 +40,22 @@ namespace MessengerAPI.Repositories
             return await Execute(async (conn) =>
             {
                 return await conn.QueryAsync<Guid>("SELECT groupid FROM usergroup WHERE userid=@Id AND isdeleted=false", new { Id=userId });
+            });
+        }
+
+        public async Task<Guid> GetChatAdmin(Guid chatId)
+        {
+            return await Execute(async (conn) =>
+            {
+                return await conn.QueryFirstOrDefaultAsync<Guid>("SELECT userid FROM usergroup JOIN usertypes ON usertypeid=usertypes.id WHERE groupId=@ChatId AND type=@Type", new { ChatId = chatId, Type="admin" });
+            });
+        }
+
+        public async Task<IEnumerable<Guid>> GetChatUsers(Guid chatId)
+        {
+            return await Execute(async (conn) =>
+            {
+                return await conn.QueryAsync<Guid>("SELECT userid FROM usergroup WHERE chatid=@Id AND isdeleted=false", new { Id = chatId });
             });
         }
     }

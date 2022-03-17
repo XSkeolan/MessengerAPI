@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace MessengerAPI.Controllers
 {
-    [Route("api/public")]
+    [Route("api/public/signIn")]
     [ApiController]
     public class SignInController : ControllerBase
     {
@@ -20,7 +20,6 @@ namespace MessengerAPI.Controllers
 
         [AllowAnonymous]
         [HttpPost]
-        [Route("signin")]
         public async Task<IActionResult> SignIn(SignInRequest inputUser)
         {
             if (!Regex.IsMatch(inputUser.Phonenumber, @"\d{11}") || inputUser.Phonenumber.Length != 11)
@@ -37,11 +36,7 @@ namespace MessengerAPI.Controllers
             {
                 return Ok(await _signInService.SignIn(inputUser.Phonenumber, inputUser.Password, Request.Headers.UserAgent));
             }
-            catch(ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch(UnauthorizedAccessException ex)
+            catch(Exception ex)
             {
                 return BadRequest(ex.Message);
             }

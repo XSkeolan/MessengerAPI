@@ -4,7 +4,7 @@ using Npgsql;
 
 namespace MessengerAPI.Controllers
 {
-    [Route("api/recoverPassword")]
+    [Route("api/private/recoverPassword")]
     [ApiController]
     public class RecoverPasswordController : ControllerBase
     {

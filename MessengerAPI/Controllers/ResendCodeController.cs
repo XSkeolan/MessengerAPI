@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 namespace MessengerAPI.Controllers
 {
-    [Route("api/resendCode")]
+    [Route("api/private/resendCode")]
     [ApiController]
     public class ResendCodeController : ControllerBase
     {

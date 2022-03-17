@@ -34,21 +34,23 @@ namespace MessengerAPI.Services
 
         public async Task<SendCodeResponse> SendCodeAsync(Guid userId)
         {
-            if (await _codeRepository.UserHasUnUsedCode(userId))
-                throw new InvalidOperationException(ResponseErrors.USER_ALREADY_HAS_CODE);
-
             User user = await _userRepository.GetAsync(userId);
             if (!user.IsConfirmed)
                 throw new InvalidOperationException(ResponseErrors.USER_HAS_UNCONFIRMED_EMAIL);
 
+            if (await _codeRepository.UserHasUnUsedCode(userId))
+                throw new InvalidOperationException(ResponseErrors.USER_ALREADY_HAS_CODE);
+
             string code;
+            string hashedCode;
             do
             {
                 code = GenerateCode();
+                hashedCode = Password.GetHasedPassword(code);
             }
-            while (await _codeRepository.UnUsedCodeExists(code));
+            while (await _codeRepository.UnUsedCodeExists(hashedCode));
 
-            await _codeRepository.CreateAsync(new ConfirmationCode { Code = code, UserId=userId });
+            await _codeRepository.CreateAsync(new ConfirmationCode { Code = hashedCode, UserId=userId });
 
             MailAddress from = new MailAddress(_email, _name);
             MailAddress to = new MailAddress(user.Email);
@@ -67,7 +69,23 @@ namespace MessengerAPI.Services
 
             await smtp.SendMailAsync(m);
 
-            return new SendCodeResponse { EmailCodeHash = code, Timeout = _expiries };
+            return new SendCodeResponse { EmailCodeHash = hashedCode, Timeout = _expiries };
+        }
+
+        public async Task<SendCodeResponse> ResendCodeAsync(string codeHash)
+        {
+            if(!await _codeRepository.UnUsedCodeExists(codeHash))
+                throw new InvalidOperationException(ResponseErrors.UNUSED_CODE_NOT_EXIST);
+            //Изменить существующий код в бд на новый
+            string newHashedCode;
+            do
+            {
+                newHashedCode = Password.GetHasedPassword(GenerateCode());
+            }
+            while (await _codeRepository.UnUsedCodeExists(newHashedCode));
+
+            //await _codeRepository.UpdateAsync(newHashedCode);
+            return new SendCodeResponse { EmailCodeHash = newHashedCode, Timeout = _expiries };
         }
 
         private string GenerateCode()

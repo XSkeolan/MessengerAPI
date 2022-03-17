@@ -6,13 +6,13 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace MessengerAPI.Controllers
 {
-    [Route("api/private")]
+    [Route("api/private/chat")]
     [ApiController]
-    public class CreateChatController : ControllerBase
+    public class ChatController : ControllerBase
     {
         private readonly IChatService _chatService;
 
-        public CreateChatController(IChatService chatService)
+        public ChatController(IChatService chatService)
         {
             _chatService = chatService;
         }
@@ -22,15 +22,9 @@ namespace MessengerAPI.Controllers
         [Route("createChat")]
         public async Task<IActionResult> CreateChat(ChatRequest request)
         {
-            if (request.Name == string.Empty || request.InviteUsers.Length == 0)
+            if (string.IsNullOrEmpty(request.Name) || request.InviteUsers.Length < 2)
             {
                 return BadRequest(ResponseErrors.INVALID_FIELDS);
-            }
-
-            Guid userId = Guid.Parse(HttpContext.Items["User"].ToString());
-            if (request.InviteUsers.Contains(userId))
-            {
-                return BadRequest(ResponseErrors.INVALID_INVITE_USER);
             }
 
             //if (request.Photo != null)
@@ -44,11 +38,30 @@ namespace MessengerAPI.Controllers
             { 
                 Name=request.Name, 
                 Description = request.Description, 
-                Administrator = userId, 
-                Photo = new InputFile("", ""), 
+                Photo = null, 
+                Type = request.ChatType,
                 Created = DateTime.UtcNow 
             };
-            return Ok(await _chatService.CreateChat(chat, request.InviteUsers.Distinct().ToArray()));
+            
+            await _chatService.CreateChat(chat);
+            ChatCreateResponse response = new ChatCreateResponse
+            {
+                ChatType = chat.Type,
+                Description = chat.Description,
+                Name = chat.Name,
+                ChatId = chat.Id,
+                InviteUsers = await _chatService.InviteUsersAsync(chat.Id, request.InviteUsers)
+            };
+
+            return Created("api/private/chat", response);
+        }
+
+        [HttpGet]
+        [Authorize]
+        [Route("getHistoryChat")]
+        public async Task<IActionResult> GetChatHistory(Guid chatId)
+        {
+            return Ok();
         }
     }
 }

@@ -5,6 +5,7 @@ namespace MessengerAPI.Interfaces
 {
     public interface IChatService
     {
-        Task<ChatCreateResponse> CreateChat(Chat chat, Guid[] inviteUsers);
+        public Task CreateChat(Chat chat);
+        public Task<IEnumerable<UserResponse>> InviteUsersAsync(Guid chatId, IEnumerable<Guid> users);
     }
 }
