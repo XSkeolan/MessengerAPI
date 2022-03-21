@@ -25,18 +25,24 @@ namespace MessengerAPI.Services
         {
             if (message.OriginalMessageId != null)
             {
-                if (_messageRepository.GetAsync(message.OriginalMessageId ?? Guid.Empty) == null)
+                if (await _messageRepository.GetAsync(message.OriginalMessageId.Value) == null)
                 {
                     throw new ArgumentException(ResponseErrors.MESSAGE_NOT_FOUND);
                 }
             }
             if(message.ReplyMessageId != null)
             {
-                if (_messageRepository.GetAsync(message.ReplyMessageId ?? Guid.Empty) == null)
+                if (await _messageRepository.GetAsync(message.ReplyMessageId.Value) == null)
                 {
                     throw new ArgumentException(ResponseErrors.MESSAGE_NOT_FOUND);
                 }
             }
+            if(await _chatRepository.GetAsync(message.Destination) == null)
+            {
+                throw new ArgumentException(ResponseErrors.DESTINATION_NOT_FOUND);
+            }
+
+            message.From = _serviceContext.UserId;
 
             await _messageRepository.CreateAsync(message);
 
@@ -46,46 +52,10 @@ namespace MessengerAPI.Services
                 FromId = message.From, 
                 Message = message.Text, 
                 Date = message.DateSend, 
-                DestinationId = message.Destination
+                DestinationId = message.Destination,
+                IsPinned = message.IsPinned,
+                IsDeleted = message.IsDeleted
             };
-        }
-
-        public async Task<List<MessageResponse>> GetMessagesAsync(Guid userId, IEnumerable<Guid> ids)
-        {
-            List<MessageResponse> responses = new List<MessageResponse>();
-            //IEnumerable<Guid> chatsDestination = await _userChatRepository.GetUserChats(userId);
-            //foreach (var id in ids.Distinct())
-            //{
-            //    Message message = await _messageRepository.GetAsync(id);
-            //    if(message == null)
-            //    {
-            //        continue;
-            //    }
-                
-            //    if(message.DestinationType == DestinationType.User)
-            //    {
-            //        if(message.Destination == userId || message.From == userId)
-            //        {
-            //            responses.Add(new MessageResponse { Message = message.Text, Date = message.DateSend, DestinationId = message.Destination, DestinationType=message.DestinationType, FromId = message.From, MessageId = message.Id });
-            //        }
-            //        else
-            //        {
-            //            throw new Exception(ResponseErrors.USER_HAS_NOT_ACCESS);
-            //        }
-            //    }
-            //    else if(message.DestinationType == DestinationType.Chat)
-            //    {
-            //        if(chatsDestination.Count(x=> x==message.Destination) == 0)
-            //        {
-            //            throw new Exception(ResponseErrors.USER_HAS_NOT_ACCESS);
-            //        }
-            //        else
-            //        {
-            //            responses.Add(new MessageResponse { Message = message.Text, Date = message.DateSend, DestinationId = message.Destination, DestinationType = message.DestinationType, FromId = message.From, MessageId = message.Id });
-            //        }
-            //    }
-            //}
-            return responses;
         }
     }
 }

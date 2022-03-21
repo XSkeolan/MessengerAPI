@@ -2,7 +2,6 @@
 using MessengerAPI.Models;
 using MessengerAPI.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MessengerAPI.Controllers
@@ -35,9 +34,11 @@ namespace MessengerAPI.Controllers
                     DateSend = DateTime.UtcNow,
                     Destination = request.Destination,
                     Text = request.Message,
-                    ReplyMessageId = request.ReplyMessageId
+                    ReplyMessageId = request.ReplyMessageId,
+                    OriginalMessageId = null
                 };
-                return Ok(await _messageService.SendMessageAsync(message));
+                MessageResponse response = await _messageService.SendMessageAsync(message);
+                return Created($"api/private/messages?id={response.MessageId}", response);
             }
             catch (ArgumentException ex)
             {
@@ -50,10 +51,9 @@ namespace MessengerAPI.Controllers
         [Route("getMessages")]
         public async Task<IActionResult> GetMessages(IEnumerable<Guid> ids)
         {
-            Guid userId = Guid.Parse(HttpContext.Items["User"].ToString());
             try
             {
-                return Ok(await _messageService.GetMessagesAsync(userId, ids));
+                return Ok(/*await _messageService.GetMessagesAsync(userId, ids)*/);
             }
             catch (Exception ex)
             {

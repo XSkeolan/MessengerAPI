@@ -46,5 +46,15 @@ namespace MessengerAPI.Repositories
                 return ids.FirstOrDefault();
             });
         }
+
+        public async Task<UserType> GetUserTypeInChat(Guid userId, Guid chatId)
+        {
+            return await Execute(async (conn) =>
+            {
+                return await conn.QueryFirstOrDefaultAsync<UserType>("SELECT usertypes.id, type, usertypes.isdeleted " +
+                    "FROM usertypes JOIN usergroup ON usertypes.id=usergroup.usertypeid " +
+                    "WHERE userid=@UserId AND groupid=@GroupId", new {UserId=userId, GroupId=chatId});
+            });
+        }
     }
 }

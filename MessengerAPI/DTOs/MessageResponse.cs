@@ -9,6 +9,7 @@ namespace MessengerAPI.DTOs
         public Guid DestinationId { get; set; }
         public string Message { get; set; }
         public DateTime Date { get; set; }
-        public DestinationType DestinationType { get; set; }
+        public bool IsPinned { get; set; }
+        public bool IsDeleted { get; set; }
     }
 }

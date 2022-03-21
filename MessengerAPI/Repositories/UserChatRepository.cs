@@ -55,7 +55,7 @@ namespace MessengerAPI.Repositories
         {
             return await Execute(async (conn) =>
             {
-                return await conn.QueryAsync<Guid>("SELECT userid FROM usergroup WHERE chatid=@Id AND isdeleted=false", new { Id = chatId });
+                return await conn.QueryAsync<Guid>("SELECT userid FROM usergroup WHERE groupid=@Id AND isdeleted=false", new { Id = chatId });
             });
         }
     }

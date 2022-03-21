@@ -44,16 +44,16 @@ namespace MessengerAPI.Controllers
             };
             
             await _chatService.CreateChat(chat);
-            ChatCreateResponse response = new ChatCreateResponse
+            ChatResponse response = new ChatResponse
             {
+                ChatId = chat.Id,
                 ChatType = chat.Type,
                 Description = chat.Description,
                 Name = chat.Name,
-                ChatId = chat.Id,
                 InviteUsers = await _chatService.InviteUsersAsync(chat.Id, request.InviteUsers)
             };
 
-            return Created("api/private/chat", response);
+            return Created($"api/private/chat?id={response.ChatId}", response);
         }
 
         [HttpGet]
@@ -62,6 +62,13 @@ namespace MessengerAPI.Controllers
         public async Task<IActionResult> GetChatHistory(Guid chatId)
         {
             return Ok();
+        }
+
+        [HttpGet("getChat")]
+        [Authorize]
+        public async Task<IActionResult> GetChats(Guid id)
+        {
+            return Ok(await _chatService.GetChatAsync(id));
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace MessengerAPI.DTOs
 {
-    public class ChatCreateResponse
+    public class ChatResponse
     {
         /// <summary>
         /// Идентификатор нового чата

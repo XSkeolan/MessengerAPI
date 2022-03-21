@@ -43,16 +43,16 @@ namespace MessengerAPI.Services
 
             Password.VerifyHashedPassword(user.Password, password);
 
-            Session session = new Session { DateStart = DateTime.UtcNow, UserId = user.Id, DeviceName=deviceName, DateEnd = DateTime.UtcNow.Add(TimeSpan.FromMinutes(_expires)) };
+            Session session = new Session { DateStart = DateTime.UtcNow, UserId = user.Id, DeviceName=deviceName, DateEnd = DateTime.UtcNow.AddSeconds(_expires) };
             await _sessionRepository.CreateAsync(session);
 
             var identity = GetIdentity(session);
             var jwt = new JwtSecurityToken(
                     issuer: _issuer,
                     audience: _audience,
-                    notBefore: DateTime.UtcNow,
+                    notBefore: session.DateStart,
                     claims: identity.Claims,
-                    expires: DateTime.UtcNow.AddSeconds(_expires),
+                    expires: session.DateEnd,
                     signingCredentials: new SigningCredentials(new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_key)), SecurityAlgorithms.HmacSha256));
             var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
 

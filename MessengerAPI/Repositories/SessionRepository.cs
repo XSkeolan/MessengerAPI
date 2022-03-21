@@ -39,7 +39,8 @@ namespace MessengerAPI.Repositories
         {
             return await Execute(async (conn) =>
             {
-               return await conn.QueryFirstOrDefaultAsync<Session>("SELECT * FROM Sessions WHERE devicename=@DeviceName AND dateend>@DateEnd", new { DeviceName=device, DateEnd=DateTime.UtcNow });
+               Session s = await conn.QueryFirstOrDefaultAsync<Session>("SELECT * FROM Sessions WHERE devicename=@DeviceName AND dateend>@DateEnd", new { DeviceName=device, DateEnd=DateTime.UtcNow });
+                return s;
             });
         }
     }

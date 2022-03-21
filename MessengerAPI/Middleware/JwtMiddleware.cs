@@ -1,5 +1,4 @@
-﻿using MessengerAPI.Contexts;
-using MessengerAPI.Interfaces;
+﻿using MessengerAPI.Interfaces;
 using MessengerAPI.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;

@@ -26,49 +26,34 @@ namespace MessengerAPI.Services
         public async Task CreateChat(Chat chat)
         {
             await _chatRepository.CreateAsync(chat);
-            ChatType chatType = await _chatTypeRepository.GetAsync(chat.Type);
-
-            if (chatType.Type == "HasAnAdministrator")
-            {
-                await _userChatsRepository.CreateAsync(new UserGroup 
-                { 
-                    ChatId = chat.Id, 
-                    UserId = _serviceContext.UserId, 
-                    UserTypeId = await _userTypesRepository.GetIdByTypeName("admin") 
-                });
-            }
         }
 
         public async Task<IEnumerable<UserResponse>> InviteUsersAsync(Guid chatId, IEnumerable<Guid> users)
         {
-            IEnumerable<Guid> inviteUsers = users;
             List<UserResponse> userResponses = new List<UserResponse>();
 
             Chat chat = await _chatRepository.GetAsync(chatId);
             ChatType chatType = await _chatTypeRepository.GetAsync(chat.Type);
 
-            if (chatType.Type == "HasAnAdministrator")
+            string userType;
+            foreach (Guid id in users)
             {
-                Guid admin = await _userChatsRepository.GetChatAdmin(chatId);
-                User user = await _userRepository.GetAsync(admin);
-                userResponses.Add(new UserResponse {
-                    Id=admin,
-                    Name=user.Name,
-                    Surname = user.Surname,
-                    Nickname = user.Nickname,
-                    UserType = "admin"
-                });
-                inviteUsers = inviteUsers.Where(x => x != admin);
-            }
+                if (chatType.Type == "HasAnAdministrator" && id == _serviceContext.UserId)
+                {
+                    userType = "admin";
+                }
+                else
+                {
+                    userType = "user";
+                }
 
-            foreach (Guid id in inviteUsers)
-            {
                 await _userChatsRepository.CreateAsync(new UserGroup
                 {
                     ChatId = chatId,
                     UserId = id,
-                    UserTypeId = await _userTypesRepository.GetIdByTypeName("user")
+                    UserTypeId = await _userTypesRepository.GetIdByTypeName(userType)
                 });
+
                 User user = await _userRepository.GetAsync(id);
                 userResponses.Add(new UserResponse
                 {
@@ -76,10 +61,54 @@ namespace MessengerAPI.Services
                     Name = user.Name,
                     Surname = user.Surname,
                     Nickname = user.Nickname,
-                    UserType = "user"
+                    UserType = userType
                 });
             }
+
             return userResponses;
+        }
+
+        public async Task<ChatResponse?> GetChatAsync(Guid chatId)
+        {
+            Chat chat = await _chatRepository.GetAsync(chatId);
+            if (chat == null)
+            {
+                return null;
+            }
+            else
+            {
+                IEnumerable<Guid> usersId = await _userChatsRepository.GetChatUsers(chatId);
+
+                if (!usersId.Contains(_serviceContext.UserId))
+                    throw new InvalidOperationException(ResponseErrors.USER_HAS_NOT_ACCESS);
+
+                ChatResponse response = new ChatResponse 
+                { 
+                    ChatId = chat.Id,
+                    Name = chat.Name,
+                    Description = chat.Description,
+                    ChatType = chat.Type,
+                    InviteUsers = new List<UserResponse>()
+                };
+
+                foreach (var id in usersId)
+                {
+                    User user = await _userRepository.GetAsync(id);
+                    UserType usertype = await _userTypesRepository.GetUserTypeInChat(user.Id, chatId);
+
+                    UserResponse userResponse = new UserResponse
+                    {
+                        Id = user.Id,
+                        Name = user.Name,
+                        Surname = user.Surname,
+                        Nickname = user.Nickname,
+                        UserType = usertype.Type
+                    };
+                    response.InviteUsers = response.InviteUsers.Append(userResponse);
+                }
+                
+                return response;
+            }
         }
     }
 }
