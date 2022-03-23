@@ -4,6 +4,6 @@
     {
         public Task CreateAsync(TEntity entity);
         public Task DeleteAsync(Guid id);
-        public Task<TEntity> GetAsync(Guid id);
+        public Task<TEntity?> GetAsync(Guid id);
     }
 }

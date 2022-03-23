@@ -22,7 +22,7 @@ namespace MessengerAPI.Controllers
         [Route("createChat")]
         public async Task<IActionResult> CreateChat(ChatRequest request)
         {
-            if (string.IsNullOrEmpty(request.Name) || request.InviteUsers.Length < 2)
+            if (string.IsNullOrEmpty(request.Name))
             {
                 return BadRequest(ResponseErrors.INVALID_FIELDS);
             }
@@ -34,23 +34,20 @@ namespace MessengerAPI.Controllers
             //        sw.Write(request.Photo, 0, request.Photo.Length);
             //    }
             //}
-            Chat chat = new Chat 
-            { 
-                Name=request.Name, 
-                Description = request.Description, 
-                Photo = null, 
-                Type = request.ChatType,
-                Created = DateTime.UtcNow 
+            Chat chat = new Chat
+            {
+                Name = request.Name,
+                Description = request.Description,
+                Photo = null,
+                Created = DateTime.UtcNow
             };
-            
-            await _chatService.CreateChat(chat);
+
+            await _chatService.CreateChatAsync(chat);
             ChatResponse response = new ChatResponse
             {
                 ChatId = chat.Id,
-                ChatType = chat.Type,
                 Description = chat.Description,
                 Name = chat.Name,
-                InviteUsers = await _chatService.InviteUsersAsync(chat.Id, request.InviteUsers)
             };
 
             return Created($"api/private/chat?id={response.ChatId}", response);
@@ -66,9 +63,84 @@ namespace MessengerAPI.Controllers
 
         [HttpGet("getChat")]
         [Authorize]
-        public async Task<IActionResult> GetChats(Guid id)
+        public async Task<IActionResult> GetChat(Guid id)
         {
-            return Ok(await _chatService.GetChatAsync(id));
+            try
+            {
+                return Ok(await _chatService.GetChatAsync(id));
+            }
+            catch(SystemException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPut("editName")]
+        [Authorize]
+        public async Task<IActionResult> EditName(Guid chatId, string name)
+        {
+            try
+            {
+                ChatResponse? response = await _chatService.EditNameAsync(chatId, name);
+
+                if (response == null)
+                {
+                    return NoContent();
+                }
+                else
+                {
+                    return Ok();
+                }
+            }
+            catch(ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPut("editDescription")]
+        [Authorize]
+        public async Task<IActionResult> EditDescription(Guid chatId, string name)
+        {
+            try
+            {
+                ChatResponse? response = await _chatService.EditDescriptionAsync(chatId, name);
+
+                if (response == null)
+                {
+                    return NoContent();
+                }
+                else
+                {
+                    return Ok();
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPut("editAdmin")]
+        [Authorize]
+        public async Task<IActionResult> EditAdmin(Guid chatId, Guid userId)
+        {
+            return Ok();
+        }
+
+        [HttpDelete("deleteChat")]
+        [Authorize]
+        public async Task<IActionResult> DeleteChat(Guid chatId)
+        {
+            try
+            {
+                await _chatService.DeleteChatAsync(chatId);
+                return NoContent();
+            }
+            catch(ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

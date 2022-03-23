@@ -32,14 +32,23 @@ namespace MessengerAPI.Services
             _expiries = options.Value.Expires;
         }
 
-        public async Task<SendCodeResponse> SendCodeAsync(Guid userId)
+        public async Task<SendCodeResponse> SendCodeAsync(string email)
         {
-            User user = await _userRepository.GetAsync(userId);
-            if (!user.IsConfirmed)
-                throw new InvalidOperationException(ResponseErrors.USER_HAS_UNCONFIRMED_EMAIL);
+            User? user = await _userRepository.FindByConfirmedEmailAsync(email);
+            if(user == null)
+            {
+                throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
+            }
 
-            if (await _codeRepository.UserHasUnUsedCode(userId))
+            if (!user.IsConfirmed)
+            {
+                throw new InvalidOperationException(ResponseErrors.USER_HAS_UNCONFIRMED_EMAIL);
+            }
+
+            if (await _codeRepository.UserHasUnUsedCode(user.Id))
+            {
                 throw new InvalidOperationException(ResponseErrors.USER_ALREADY_HAS_CODE);
+            }
 
             string code;
             string hashedCode;
@@ -50,7 +59,7 @@ namespace MessengerAPI.Services
             }
             while (await _codeRepository.UnUsedCodeExists(hashedCode));
 
-            await _codeRepository.CreateAsync(new ConfirmationCode { Code = hashedCode, UserId=userId });
+            await _codeRepository.CreateAsync(new ConfirmationCode { Code = hashedCode, UserId=user.Id });
 
             MailAddress from = new MailAddress(_email, _name);
             MailAddress to = new MailAddress(user.Email);

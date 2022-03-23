@@ -2,10 +2,13 @@
 {
     public class ChatRequest
     {
+        /// <summary>
+        /// Название чата
+        /// </summary>
         public string Name { get; set; }
+        /// <summary>
+        /// Описание чата
+        /// </summary>
         public string? Description { get; set; }
-        //public byte[]? Photo { get; set; }
-        public Guid[] InviteUsers { get; set; }
-        public Guid ChatType { get; set; }
     }
 }

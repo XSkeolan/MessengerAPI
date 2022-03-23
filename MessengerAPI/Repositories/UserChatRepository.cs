@@ -27,7 +27,7 @@ namespace MessengerAPI.Repositories
             });
         }
 
-        public override async Task<UserGroup> GetAsync(Guid id)
+        public override async Task<UserGroup?> GetAsync(Guid id)
         {
             return await Execute(async (conn) =>
             {
@@ -43,11 +43,11 @@ namespace MessengerAPI.Repositories
             });
         }
 
-        public async Task<Guid> GetChatAdmin(Guid chatId)
+        public async Task<IEnumerable<Guid>> GetChatAdmins(Guid chatId)
         {
             return await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<Guid>("SELECT userid FROM usergroup JOIN usertypes ON usertypeid=usertypes.id WHERE groupId=@ChatId AND type=@Type", new { ChatId = chatId, Type="admin" });
+                return await conn.QueryAsync<Guid>("SELECT userid FROM usergroup JOIN usertypes ON usertypeid=usertypes.id WHERE groupId=@ChatId AND type=@Type", new { ChatId = chatId, Type="admin" });
             });
         }
 

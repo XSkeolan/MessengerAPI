@@ -6,5 +6,6 @@ namespace MessengerAPI.Interfaces
     {
         Task<User?> FindByPhonenumberAsync(string phonenumber);
         Task<User?> FindByNicknameAsync(string nickname);
+        Task<User?> FindByConfirmedEmailAsync(string email);
     }
 }

@@ -1,7 +1,7 @@
 ﻿using MessengerAPI.DTOs;
 using MessengerAPI.Models;
 
-namespace MessengerAPI.Services
+namespace MessengerAPI.Interfaces
 {
     public interface IMessageService
     {

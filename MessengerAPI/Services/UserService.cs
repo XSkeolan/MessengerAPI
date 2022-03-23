@@ -1,5 +1,6 @@
 ﻿using MessengerAPI.DTOs;
 using MessengerAPI.Interfaces;
+using MessengerAPI.Models;
 
 namespace MessengerAPI.Services
 {
@@ -11,6 +12,7 @@ namespace MessengerAPI.Services
         {
             _userRepository = userRepository;
         }
+
         public async Task<UserCreateResponse> GetUserByPhonenumber(string phoneNumber)
         {
             var user = await _userRepository.FindByPhonenumberAsync(phoneNumber);

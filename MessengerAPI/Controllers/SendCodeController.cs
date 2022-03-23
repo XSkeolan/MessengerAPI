@@ -17,12 +17,11 @@ namespace MessengerAPI.Controllers
 
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> SendCode()
+        public async Task<IActionResult> SendCode(string email)
         {
             try
             {
-                Guid userId = Guid.Parse(HttpContext.Items["User"].ToString());
-                return Ok(await _sendCodeService.SendCodeAsync(userId));
+                return Ok(await _sendCodeService.SendCodeAsync(email));
             }
             catch(InvalidOperationException ex)
             {

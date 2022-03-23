@@ -15,8 +15,8 @@ namespace MessengerAPI.Repositories
             chat.Id = await Execute(async (conn) =>
             {
                 return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO groups (name, description, datecreate, ischannel, type) " +
-                    "VALUES(@Name, @Description, @DateCreate, @IsChannel, @Type) RETURNING id",
-                    new { Name = chat.Name, Description = chat.Description, /*Photo = chat.Photo,*/ DateCreate = chat.Created, IsChannel = false, Type=chat.Type });
+                    "VALUES(@Name, @Description, @DateCreate, @IsChannel) RETURNING id",
+                    new { Name = chat.Name, Description = chat.Description, /*Photo = chat.Photo,*/ DateCreate = chat.Created, IsChannel = false });
             });
         }
 
@@ -32,7 +32,25 @@ namespace MessengerAPI.Repositories
         {
             return await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<Chat>("SELECT * FROM groups WHERE id=@Id AND isdeleted=false", new { id });
+                return await conn.QueryFirstOrDefaultAsync<Chat?>("SELECT * FROM groups WHERE id=@Id AND isdeleted=false", new { id });
+            });
+        }
+
+        public async Task UpdateAsync(Guid id, string name, string description)
+        {
+            await Execute(async (conn) =>
+            {
+                return await conn.ExecuteAsync("UPDATE groups SET name=@Name, description=@Description WHERE id=@Id AND isdeleted=false", 
+                    new { Id = id, Name = name, Description=description });
+            });
+        }
+
+        public async Task<Message?> GetLastMessage(Guid id)
+        {
+            return await Execute(async (conn) =>
+            {
+                return await conn.QueryFirstOrDefaultAsync<Message?>("SELECT id, text, datesend, \"from\" FROM messages " +
+                    "WHERE destination=@Destination AND datesend = (SELECT max(datesend) FROM messages WHERE destination=@Destination)", new { Destination = id});
             });
         }
     }

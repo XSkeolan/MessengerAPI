@@ -31,7 +31,7 @@ namespace MessengerAPI.Repositories
         {
             return await Execute(async (conn) =>
             {
-                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE nickname=@Nickname", new { nickname });
+                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE nickname=@Nickname AND isdeleted=false", new { nickname });
                 return users.FirstOrDefault();
             });   
         }
@@ -40,7 +40,7 @@ namespace MessengerAPI.Repositories
         {
             return await Execute(async (conn) =>
             {
-                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE phonenumber=@Phonenumber", new { phonenumber });
+                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE phonenumber=@Phonenumber AND isdeleted=false", new { phonenumber });
                 return users.FirstOrDefault();
             });
         }
@@ -49,7 +49,7 @@ namespace MessengerAPI.Repositories
         {
             return await Execute(async (conn) =>
             {
-                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE email=@Email AND isconfirmed=@IsConfirmed", new { Email=email, IsConfirmed=true });
+                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE email=@Email AND isconfirmed=@IsConfirmed AND isdeleted=false", new { Email=email, IsConfirmed=true });
                 return users.FirstOrDefault();
             });
         }

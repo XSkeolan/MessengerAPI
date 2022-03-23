@@ -4,6 +4,6 @@ namespace MessengerAPI.Interfaces
 {
     public interface ISendCodeService
     {
-        Task<SendCodeResponse> SendCodeAsync(Guid userId);
+        Task<SendCodeResponse> SendCodeAsync(string email);
     }
 }

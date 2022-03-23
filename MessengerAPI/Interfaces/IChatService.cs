@@ -5,8 +5,12 @@ namespace MessengerAPI.Interfaces
 {
     public interface IChatService
     {
-        public Task CreateChat(Chat chat);
-        public Task<IEnumerable<UserResponse>> InviteUsersAsync(Guid chatId, IEnumerable<Guid> users);
-        public Task<ChatResponse?> GetChatAsync(Guid chatId);
+        Task CreateChatAsync(Chat chat);
+        Task<IEnumerable<UserResponse>> InviteUsersAsync(Guid chatId, IEnumerable<Guid> users);
+        Task<ChatResponse?> GetChatAsync(Guid chatId);
+        Task<ChatResponse?> EditNameAsync(Guid chatId, string name);
+        Task DeleteChatAsync(Guid chatId);
+        Task<ChatResponse?> EditDescriptionAsync(Guid chatId, string name);
+        Task<IEnumerable<DialogInfoResponse>> GetDialogs(Guid? offset_id, int count);
     }
 }

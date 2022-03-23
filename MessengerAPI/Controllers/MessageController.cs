@@ -1,4 +1,5 @@
 ﻿using MessengerAPI.DTOs;
+using MessengerAPI.Interfaces;
 using MessengerAPI.Models;
 using MessengerAPI.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -11,10 +12,12 @@ namespace MessengerAPI.Controllers
     public class MessageController : ControllerBase
     {
         private readonly IMessageService _messageService;
+        private readonly IChatService _chatService;
 
-        public MessageController(IMessageService messageService)
+        public MessageController(IMessageService messageService, IChatService chatService)
         {
             _messageService = messageService;
+            _chatService = chatService;
         }
 
         [HttpPost]
@@ -59,6 +62,19 @@ namespace MessengerAPI.Controllers
             {
                 return Forbid(ex.Message);
             }
+        }
+
+        [HttpGet()]
+        [Authorize]
+        [Route("getDialogs")]
+        public async Task<IActionResult> GetDialogs(Guid? offsetId, int count)
+        {
+            if (count <= 0)
+            {
+                return BadRequest(ResponseErrors.INVALID_FIELDS);
+            }
+
+            return Ok(await _chatService.GetDialogs(offsetId, count));
         }
     }
 }
