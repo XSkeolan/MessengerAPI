@@ -35,6 +35,14 @@ namespace MessengerAPI.Repositories
             });
         }
 
+        public async Task<UserGroup?> GetByChatAndUserAsync(Guid chatId, Guid userId)
+        {
+            return await Execute(async (conn) =>
+            {
+                return await conn.QueryFirstOrDefaultAsync<UserGroup>("SELECT * FROM usergroup WHERE userid=@UserId AND groupid=@GroupId AND isdeleted=false", new { UserId=userId, GroupId=chatId });
+            });
+        }
+
         public async Task<IEnumerable<Guid>> GetUserChats(Guid userId)
         {
             return await Execute(async (conn) =>
@@ -56,6 +64,14 @@ namespace MessengerAPI.Repositories
             return await Execute(async (conn) =>
             {
                 return await conn.QueryAsync<Guid>("SELECT userid FROM usergroup WHERE groupid=@Id AND isdeleted=false", new { Id = chatId });
+            });
+        }
+
+        public async Task Update(Guid id, Guid userTypeId)
+        {
+            await Execute(async (conn) =>
+            {
+                return await conn.ExecuteAsync("UPDATE usergroup SET usertypeid=@UserTypeId WHERE groupid=@Id AND isdeleted=false", new { Id = id, UserTypeId = userTypeId });
             });
         }
     }

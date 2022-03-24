@@ -6,5 +6,6 @@
         public string? Description { get; set; }
         public InputFile? Photo { get; set; }
         public DateTime Created { get; set; }
+        public Guid Creator { get; set; }
     }
 }
