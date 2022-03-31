@@ -14,8 +14,8 @@ namespace MessengerAPI.Repositories
         {
             userType.Id = await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO usertypes (type) VALUES(@Type) RETURNING id", 
-                    new { Type = userType.Type });
+                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO usertypes (typename, permissions, prioritylevel) " +
+                    "VALUES(@TypeName, @Permissions, @PriorityLevel) RETURNING id", userType);
             });
         }
 
@@ -23,37 +23,57 @@ namespace MessengerAPI.Repositories
         {
             await Execute(async (conn) =>
             {
-                return await conn.ExecuteAsync("UPDATE usertypes SET isdeleted=@IsDeleted FROM groups WHERE id=@Id AND isdeleted=false", 
-                    new { IsDeleted = true, Id = id });
+                return await conn.ExecuteAsync("UPDATE usertypes SET isdeleted=true" +
+                    "FROM groups WHERE id=@Id AND isdeleted=false", 
+                    new { Id = id });
             });
         }
 
-        public override async Task<UserType> GetAsync(Guid id)
+        public override async Task<UserType?> GetAsync(Guid id)
         {
             return await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<UserType>("SELECT * FROM usertypes WHERE id=@Id AND isdeleted=false", new { id });
+                return await conn.QueryFirstOrDefaultAsync<UserType>("SELECT * FROM usertypes " +
+                    "WHERE id=@Id AND isdeleted=false", 
+                    new { id });
             });
         }
 
-        public async Task<Guid> GetIdByTypeName(string typeName)
+        public async Task<UserType?> GetByTypeNameAsync(string typeName)
         {
             return await Execute(async (conn) =>
             {
-                IEnumerable<Guid> ids = await conn.QueryAsync<Guid>("SELECT id FROM usertypes WHERE type=@Type AND isdeleted=false", new { Type=typeName });
-                if (ids.Count() > 1)
-                    throw new InvalidOperationException();
-                return ids.FirstOrDefault();
+                return await conn.QueryFirstOrDefaultAsync<UserType>("SELECT * FROM usertypes " +
+                    "WHERE typename=@Type AND isdeleted=false", 
+                    new { Type = typeName });
             });
         }
 
-        public async Task<UserType> GetUserTypeInChat(Guid userId, Guid chatId)
+
+        public async Task<UserType> GetUserTypeInChatAsync(Guid userId, Guid chatId)
         {
             return await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<UserType>("SELECT usertypes.id, type, usertypes.isdeleted " +
+                return await conn.QueryFirstOrDefaultAsync<UserType>("SELECT usertypes.id, typename, usertypes.isdeleted " +
                     "FROM usertypes JOIN usergroup ON usertypes.id=usergroup.usertypeid " +
-                    "WHERE userid=@UserId AND groupid=@GroupId", new {UserId=userId, GroupId=chatId});
+                    "WHERE userid=@UserId AND groupid=@GroupId", 
+                    new { UserId = userId, GroupId = chatId });
+            });
+        }
+
+        public async Task<UserType> GetDefaultType()
+        {
+            return await Execute(async (conn) =>
+            {
+                return await conn.QueryFirstOrDefaultAsync<UserType>("SELECT * FROM usertypes WHERE isdefault=true AND isdeleted=false");
+            });
+        }
+
+        public async Task<IEnumerable<UserType>> GetAll()
+        {
+            return await Execute(async (conn) =>
+            {
+                return await conn.QueryAsync<UserType>("SELECT * FROM usertypes WHERE isdeleted=false");
             });
         }
     }

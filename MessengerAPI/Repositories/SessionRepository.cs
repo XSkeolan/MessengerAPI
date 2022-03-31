@@ -23,7 +23,7 @@ namespace MessengerAPI.Repositories
         {
             await Execute(async (conn) =>
             {
-                return await conn.ExecuteAsync("UPDATE Sessions SET dateend=@DateEnd WHERE id=@Id", new { DateEnd = DateTime.UtcNow, Id = id });
+                return await conn.ExecuteAsync("UPDATE Sessions SET isdeleted=true WHERE id=@Id", new { Id = id });
             });
         }
 
@@ -35,12 +35,19 @@ namespace MessengerAPI.Repositories
             });
         }
 
+        public async Task UpdateAsync(Guid id, DateTime dateEnd)
+        {
+            await Execute(async (conn) =>
+            {
+                return await conn.ExecuteAsync("UPDATE Sessions SET dateend=@DateEnd WHERE id=@Id", new { Id=id, DateEnd = dateEnd });
+            });
+        }
+
         public async Task<Session?> GetUnfinishedOnDeviceAsync(string device)
         {
             return await Execute(async (conn) =>
             {
-               Session s = await conn.QueryFirstOrDefaultAsync<Session>("SELECT * FROM Sessions WHERE devicename=@DeviceName AND dateend>@DateEnd", new { DeviceName=device, DateEnd=DateTime.UtcNow });
-                return s;
+                return await conn.QueryFirstOrDefaultAsync<Session>("SELECT * FROM Sessions WHERE devicename=@DeviceName AND dateend>NOW()", new { DeviceName=device });
             });
         }
     }

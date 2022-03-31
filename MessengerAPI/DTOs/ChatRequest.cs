@@ -1,4 +1,7 @@
-﻿namespace MessengerAPI.DTOs
+﻿using MessengerAPI.Options;
+using Microsoft.Extensions.Options;
+
+namespace MessengerAPI.DTOs
 {
     public class ChatRequest
     {

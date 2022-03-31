@@ -4,6 +4,7 @@ using MessengerAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+
 namespace MessengerAPI.Controllers
 {
     [Route("api/private/chat")]
@@ -42,7 +43,10 @@ namespace MessengerAPI.Controllers
                 Created = DateTime.UtcNow
             };
 
-            await _chatService.CreateChatAsync(chat);
+            Guid creatorId = await _chatService.CreateChatAsync(chat);
+            await _chatService.InviteUserAsync(chat.Id, creatorId);
+            await _chatService.SetRole(chat.Id, creatorId, Guid.Parse("bb6dc5a0-9546-438b-ac19-00a748b2be82"));
+
             ChatResponse response = new ChatResponse
             {
                 ChatId = chat.Id,
@@ -53,11 +57,71 @@ namespace MessengerAPI.Controllers
             return Created($"api/private/chat?id={response.ChatId}", response);
         }
 
-        [HttpGet]
+        [HttpPost("inviteInChat")]
         [Authorize]
-        [Route("getHistoryChat")]
+        public async Task<IActionResult> InviteInChat(InviteToChatRequest request)
+        {
+            if(!await _chatService.ChatIsAvaliableAsync(request.ChatId))
+            {
+                return BadRequest(ResponseErrors.CHAT_NOT_FOUND);
+            }
+            if (!request.InviteUsers.Any())
+            {
+                return Ok();
+            }
+
+            IEnumerable<ShortUserResponse> responses = new List<ShortUserResponse>();
+            foreach (Guid user in request.InviteUsers)
+            {
+                try
+                {
+                    responses = responses.Append(await _chatService.InviteUserAsync(request.ChatId, user));
+                }
+                catch (ArgumentException ex)
+                {
+                    return BadRequest(ex.Message);
+                }
+            }
+            return Ok(responses);
+        }
+
+        [HttpPut("kickUserFromChat")]
+        [Authorize]
+        public async Task<IActionResult> KickUserFromChat(KickUserFromChatRequest request)
+        {
+            if(!await _chatService.ChatIsAvaliableAsync(request.ChatId))
+            {
+                return BadRequest(ResponseErrors.CHAT_NOT_FOUND);
+            }
+            if(!request.KickUsers.Any())
+            {
+                return Ok();
+            }
+
+            foreach (KickUserRequest kickUser in request.KickUsers)
+            {
+                try
+                {
+                    await _chatService.KickUserAsync(request.ChatId, kickUser.UserId);
+                }
+                catch(Exception ex)
+                {
+                    return BadRequest(ex.Message);
+                }
+            }
+
+            return Ok();
+        }
+
+        [HttpGet("getHistoryChat")]
+        [Authorize]
         public async Task<IActionResult> GetChatHistory(Guid chatId)
         {
+            if (await _chatService.ChatIsAvaliableAsync(chatId))
+            {
+                return BadRequest(ResponseErrors.CHAT_NOT_FOUND);
+            }
+
             return Ok();
         }
 
@@ -79,52 +143,37 @@ namespace MessengerAPI.Controllers
         [Authorize]
         public async Task<IActionResult> EditName(Guid chatId, string name)
         {
-            try
+            if(!await _chatService.ChatIsAvaliableAsync(chatId))
             {
-                ChatResponse? response = await _chatService.EditNameAsync(chatId, name);
+                return BadRequest(ResponseErrors.CHAT_NOT_FOUND);
+            }
 
-                if (response == null)
-                {
-                    return NoContent();
-                }
-                else
-                {
-                    return Ok();
-                }
-            }
-            catch(ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            return Ok();
         }
 
         [HttpPut("editDescription")]
         [Authorize]
-        public async Task<IActionResult> EditDescription(Guid chatId, string name)
+        public async Task<IActionResult> EditDescription(Guid chatId, string newDescription)
         {
-            try
+            if(await _chatService.ChatIsAvaliableAsync(chatId))
             {
-                ChatResponse? response = await _chatService.EditDescriptionAsync(chatId, name);
+                return BadRequest(ResponseErrors.CHAT_NOT_FOUND);
+            }
 
-                if (response == null)
-                {
-                    return NoContent();
-                }
-                else
-                {
-                    return Ok();
-                }
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            await _chatService.EditDescriptionAsync(chatId, newDescription);
+
+            return Ok();
         }
 
         [HttpPut("editAdmin")]
         [Authorize]
         public async Task<IActionResult> EditAdmin(Guid chatId, Guid userId)
         {
+            if (!await _chatService.ChatIsAvaliableAsync(chatId))
+            {
+                return BadRequest(ResponseErrors.CHAT_NOT_FOUND);
+            }
+
             return Ok();
         }
 
@@ -132,15 +181,46 @@ namespace MessengerAPI.Controllers
         [Authorize]
         public async Task<IActionResult> DeleteChat(Guid chatId)
         {
+            if(!await _chatService.ChatIsAvaliableAsync(chatId))
+            {
+                return BadRequest(ResponseErrors.CHAT_NOT_FOUND);
+            }
+
             try
             {
                 await _chatService.DeleteChatAsync(chatId);
-                return NoContent();
+                return Ok();
             }
             catch(ArgumentException ex)
             {
                 return BadRequest(ex.Message);
             }
+        }
+
+        [HttpPut("setRole")]
+        [Authorize]
+        public async Task<IActionResult> SetRole(Guid chatId, Guid userId, Guid roleId)
+        {
+            if(! await _chatService.ChatIsAvaliableAsync(chatId))
+            {
+                return BadRequest(ResponseErrors.CHAT_NOT_FOUND);
+            }
+
+            try
+            {
+                await _chatService.SetRole(chatId, userId, roleId);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet("getRoles")]
+        public async Task<IActionResult> GetRoles()
+        {
+            return Ok(await _chatService.GetRoles());
         }
     }
 }

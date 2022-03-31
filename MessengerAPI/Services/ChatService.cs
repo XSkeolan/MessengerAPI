@@ -11,275 +11,206 @@ namespace MessengerAPI.Services
         private readonly IUserTypeRepository _userTypesRepository;
         private readonly IUserRepository _userRepository;
         private readonly IServiceContext _serviceContext;
+        private readonly IMessageRepository _messageRepository;
 
-        public ChatService(IChatRepository chats, IUserChatRepository users, IUserTypeRepository userTypes, IUserRepository userRepository, IServiceContext serviceContext)
+        public ChatService(IChatRepository chats, IUserChatRepository users, IUserTypeRepository userTypes, IUserRepository userRepository, IMessageRepository messageRepository, IServiceContext serviceContext)
         {
             _chatRepository = chats;
             _userChatsRepository = users;
             _userTypesRepository = userTypes;
             _userRepository = userRepository;
             _serviceContext = serviceContext;
+            _messageRepository = messageRepository;
         }
 
-        public async Task CreateChatAsync(Chat chat)
+        public async Task<Guid> CreateChatAsync(Chat chat)
         {
-            chat.Creator = _serviceContext.UserId;
             await _chatRepository.CreateAsync(chat);
+            return _serviceContext.UserId;
         }
 
-        private async Task<bool> IsAdmin(Guid chatId, Guid userId)
-        {
-            IEnumerable<Guid> users = await _userChatsRepository.GetChatAdmins(chatId);
-            return users.Contains(userId);
-        }
-
-        public async Task<IEnumerable<UserResponse>> InviteUsersAsync(Guid chatId, IEnumerable<Guid> users)
-        {
-            Chat? chat = await _chatRepository.GetAsync(chatId);
-            if(chat == null)
-            {
-                throw new ArgumentException(ResponseErrors.CHAT_NOT_FOUND);
-            }
-
-            users = users.Distinct();
-            string usertype = "admin";
-            List<UserResponse> userResponses = new List<UserResponse>();
-            IEnumerable<Guid> usersInChat = await _userChatsRepository.GetChatUsers(chatId);
-
-            if (!usersInChat.Any())
-            {
-                if(_serviceContext.UserId!=chat.Creator)
-                {
-                    throw new InvalidOperationException(ResponseErrors.USER_HAS_NOT_ACCESS);
-                }
-
-                int count = users.Count();
-                if (count < 2)
-                {
-                    throw new ArgumentException("Нужно пригласить минимум 2 человека");
-                }
-                else if(count > 2)
-                {
-                    userResponses.Add(await CreateUserInChat(chatId, _serviceContext.UserId, usertype));
-
-                    users = users.Where(x=>x!=_serviceContext.UserId);
-                    usertype = "user";
-                }
-            }
-            else
-            {
-                if(!await IsAdmin(chatId, _serviceContext.UserId))
-                {
-                    throw new InvalidOperationException(ResponseErrors.USER_HAS_NOT_ACCESS);
-                }
-                if(!users.Any())
-                {
-                    throw new ArgumentException(ResponseErrors.INVITE_USERS_LIST_EMPTY);
-                }
-                usertype = "user";
-            }
-
-            foreach (Guid userId in users)
-            {
-                userResponses.Add(await CreateUserInChat(chatId, userId, usertype));
-            }
-
-            return userResponses;
-        }
-
-        private async Task<UserResponse> CreateUserInChat(Guid chatId, Guid userId, string userType)
-        {
-            await _userChatsRepository.CreateAsync(new UserGroup
-            {
-                ChatId = chatId,
-                UserId = userId,
-                UserTypeId = await _userTypesRepository.GetIdByTypeName(userType)
-            });
-
-            User? user = await _userRepository.GetAsync(_serviceContext.UserId);
-            return new UserResponse
-            {
-                Id = _serviceContext.UserId,
-                Name = user.Name,
-                Surname = user.Surname,
-                Nickname = user.Nickname,
-                UserType = userType
-            };
-        }
-
-        public async Task<UserResponse> KickUsersAsync(Guid chatId, Guid userId)
-        {
-            UserResponse userResponse;
-            Chat? chat = await _chatRepository.GetAsync(chatId);
-            if (chat == null)
-            {
-                throw new ArgumentException(ResponseErrors.CHAT_NOT_FOUND);
-            }
-
-            if (!await IsAdmin(chatId, _serviceContext.UserId))
-            {
-                throw new InvalidOperationException(ResponseErrors.CHAT_ADMIN_REQUIRED);
-            }
-
-            UserGroup? group = await _userChatsRepository.GetByChatAndUserAsync(chatId, userId);
-            if (group == null)
-            {
-                throw new ArgumentException(ResponseErrors.USER_NOT_PARTICIPANT);
-            }
-            else
-            {
-                // добавить проверку на личный чат
-                UserType? userType = await _userTypesRepository.GetAsync(group.UserTypeId);
-                if (userType.Type == "admin" && _serviceContext.UserId != chat.Creator)
-                {
-                    throw new InvalidOperationException(ResponseErrors.CHAT_ADMIN_NOT_DELETED);
-                }
-
-                await _userChatsRepository.DeleteAsync(group.Id);
-
-                User? user = await _userRepository.GetAsync(group.UserId);
-                userResponse = new UserResponse { Id = user.Id, Name=user.Name, Nickname = user.Nickname, Surname = user.Surname, UserType=userType.Type };
-            }
-
-            return userResponse;
-        }
-
-        public async Task<bool> EditChatAdmin(Guid chatId, Guid userId, bool isAdmin)
+        public async Task<bool> ChatIsAvaliableAsync(Guid chatId)
         {
             Chat? chat = await _chatRepository.GetAsync(chatId);
             if (chat == null)
             {
-                throw new ArgumentException(ResponseErrors.CHAT_NOT_FOUND);
-            }
-
-            if (!await IsAdmin(chatId, _serviceContext.UserId))
-            {
-                throw new InvalidOperationException(ResponseErrors.CHAT_ADMIN_REQUIRED);
-            }
-
-            UserGroup? userGroup = await _userChatsRepository.GetByChatAndUserAsync(chatId, userId);
-            if(userGroup == null)
-            {
-                throw new InvalidOperationException(ResponseErrors.USER_NOT_PARTICIPANT);
-            }
-
-            //if() это не личный чата
-            if (await IsAdmin(chatId, userId))
                 return false;
-
-            Guid userType;
-            if (isAdmin)
-            {
-                userType = await _userTypesRepository.GetIdByTypeName("admin");
-            }
-            else
-            {
-                userType = await _userTypesRepository.GetIdByTypeName("user");
             }
 
-            await _userChatsRepository.UpdateAsync(userGroup.Id, userType);
+            if (!(await _userChatsRepository.GetChatUsers(chatId)).Contains(_serviceContext.UserId))
+            {
+                return false;
+            }
 
             return true;
         }
 
-        public async Task<ChatResponse?> GetChatAsync(Guid chatId)
+        private async Task<bool> CurrentUserHaveRights(Guid chatId, string right, Guid? userId=null)
         {
             Chat? chat = await _chatRepository.GetAsync(chatId);
-            if (chat == null)
+
+            UserGroup? currentUserGroup = await _userChatsRepository.GetByChatAndUserAsync(chatId, _serviceContext.UserId);
+            UserType? currentUserRole = await _userTypesRepository.GetAsync(currentUserGroup.UserTypeId);
+
+            if (userId.HasValue)
             {
-                throw new ArgumentException(ResponseErrors.CHAT_NOT_FOUND);
+                UserGroup? userGroup = await _userChatsRepository.GetByChatAndUserAsync(chatId, userId.Value);
+                if (userGroup == null)
+                {
+                    throw new InvalidOperationException(ResponseErrors.USER_NOT_PARTICIPANT);
+                }
+
+                UserType? userType = await _userTypesRepository.GetAsync(userGroup.UserTypeId);
+                return currentUserRole.Permissions.Contains(right) && currentUserRole.PriorityLevel <= userType.PriorityLevel;
             }
+            else
+            {
+                return currentUserRole.Permissions.Contains(right);
+            }
+        }
+
+        public async Task<ShortUserResponse> InviteUserAsync(Guid chatId, Guid userId)
+        {
+            User? user = await _userRepository.GetAsync(userId);
+            if(user == null)
+            {
+                throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
+            }
+            
+            int countUsers = (await _userChatsRepository.GetChatUsers(chatId)).Count();
+
+            if (countUsers>0 && await CurrentUserHaveRights(chatId, Permissions.INVITE_USER))
+            {
+                throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
+            }
+
+            UserType userType = await _userTypesRepository.GetDefaultType();
+            UserGroup userGroup = new UserGroup
+            {
+                ChatId = chatId,
+                UserId = userId,
+                UserTypeId = userType.Id,
+            };
+            await _userChatsRepository.CreateAsync(userGroup);
+
+            return new ShortUserResponse
+            {
+                UserTypeId = userType.Id,
+                Name = user.Name,
+                Surname = user.Surname,
+                Nickname = user.Nickname
+            };
+        }
+
+        public async Task SetRole(Guid chatId, Guid userId, Guid roleId)
+        {
+            User? user = await _userRepository.GetAsync(userId);
+            if (user == null)
+            {
+                throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
+            }
+
+            UserGroup? userGroup = await _userChatsRepository.GetByChatAndUserAsync(chatId, userId);
+            if (userGroup == null)
+            {
+                throw new InvalidOperationException(ResponseErrors.USER_NOT_PARTICIPANT);
+            }
+
+            UserType? userType = await _userTypesRepository.GetAsync(userGroup.UserTypeId);
+            UserGroup currentUser = await _userChatsRepository.GetByChatAndUserAsync(chatId, _serviceContext.UserId);
+            UserType currnetUserType = await _userTypesRepository.GetAsync(currentUser.UserTypeId);
+            if(currnetUserType.PriorityLevel <= userType.PriorityLevel)
+            {
+                throw new InvalidOperationException(ResponseErrors.INVALID_ROLE_FOR_OPENATION);
+            }
+
+            UserType? newRole = await _userTypesRepository.GetAsync(roleId);
+            if (newRole == null)
+            {
+                throw new ArgumentException(ResponseErrors.CHAT_ROLE_NOT_FOUND);
+            }
+
+            if(!await CurrentUserHaveRights(chatId, Permissions.EDIT_PERMISSION))
+            {
+                throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
+            }
+            await _userChatsRepository.UpdateAsync(userGroup.Id, newRole.Id);
+
+            return;
+        }
+
+        public async Task KickUserAsync(Guid chatId, Guid userId)
+        {
+            if (!await CurrentUserHaveRights(chatId, Permissions.KICK_USER))
+            {
+                throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
+            }
+
+            UserGroup? kickUserGroup = await _userChatsRepository.GetByChatAndUserAsync(chatId, userId);
+            if(kickUserGroup == null)
+            {
+                throw new ArgumentException(ResponseErrors.USER_NOT_PARTICIPANT);
+            }
+
+            UserType? kickUserType = await _userTypesRepository.GetAsync(kickUserGroup.UserTypeId);
+            UserGroup? currentUserGroup = await _userChatsRepository.GetByChatAndUserAsync(chatId, _serviceContext.UserId);
+            UserType? currentUserType = await _userTypesRepository.GetAsync(currentUserGroup.UserTypeId);
+
+            if(currentUserType.PriorityLevel <= kickUserType.PriorityLevel)
+            {
+                throw new InvalidOperationException(ResponseErrors.INVALID_ROLE_FOR_OPENATION);
+            }
+
+            if (kickUserType?.Id == currentUserType?.Id)
+            {
+                throw new InvalidOperationException(ResponseErrors.CHAT_MODER_NOT_DELETED);
+            }
+
+            await _userChatsRepository.DeleteAsync(kickUserGroup.Id);
+        }
+
+        public async Task<ChatResponse> GetChatAsync(Guid chatId)
+        {
+            Chat? chat = await _chatRepository.GetAsync(chatId);
+            int count = (await _userChatsRepository.GetChatUsers(chatId)).Count();
 
             ChatResponse response = new ChatResponse
             {
                 ChatId = chat.Id,
                 Name = chat.Name,
                 Description = chat.Description,
-            };
-
-            return response;
-
-        }
-
-        public async Task<ChatResponse?> EditNameAsync(Guid chatId, string name)
-        {
-            Chat? chat = await _chatRepository.GetAsync(chatId);
-
-            if (chat == null)
-            {
-                throw new ArgumentException(ResponseErrors.CHAT_NOT_FOUND);
-            }
-            if (chat.Name == name)
-            {
-                return null;
-            }
-
-            await _chatRepository.UpdateAsync(chatId, name, chat.Description);
-
-            ChatResponse response = new ChatResponse
-            {
-                ChatId = chat.Id,
-                Name = name,
-                Description = chat.Description
+                CountUsers = count
             };
 
             return response;
         }
 
-        public async Task<ChatResponse?> EditDescriptionAsync(Guid chatId, string description)
+        public async Task EditNameAsync(Guid chatId, string name)
         {
-            Chat? chat = await _chatRepository.GetAsync(chatId);
+            await _chatRepository.UpdateAsync(chatId, name, (await _chatRepository.GetAsync(chatId)).Description);
+        }
 
-            if (chat == null)
-            {
-                throw new ArgumentException(ResponseErrors.CHAT_NOT_FOUND);
-            }
-            if (chat.Description == description)
-            {
-                return null;
-            }
-
-            await _chatRepository.UpdateAsync(chatId, chat.Name, description);
-
-            ChatResponse response = new ChatResponse
-            {
-                ChatId = chat.Id,
-                Name = chat.Name,
-                Description = description
-            };
-
-            return response;
+        public async Task EditDescriptionAsync(Guid chatId, string description)
+        {
+            await _chatRepository.UpdateAsync(chatId, (await _chatRepository.GetAsync(chatId)).Name, description);
         }
 
         public async Task DeleteChatAsync(Guid chatId)
         {
-            Chat? chat = await _chatRepository.GetAsync(chatId);
-            if(chat == null)
-            {
-                throw new ArgumentException(ResponseErrors.CHAT_NOT_FOUND);
-            }
-            
-            if (!await IsAdmin(chatId, _serviceContext.UserId))
+            if (!await CurrentUserHaveRights(chatId, Permissions.DELETE_CHAT))
             {
                 throw new InvalidOperationException(ResponseErrors.USER_HAS_NOT_ACCESS);
             }
 
-            IEnumerable<Guid> admins = await _userChatsRepository.GetChatAdmins(chatId);
-            IEnumerable<Guid> users = await _userChatsRepository.GetChatUsers(chatId);
-            if(!admins.Except(users).Any() && !users.Except(admins).Any() && users.Count()==2) // не идеальное условие (могли пригласить нескольких пользователей а потом кикнуть)
-                // либо ориентироваться на isDeleted либо новая таблица в бд
-            {
-                throw new InvalidOperationException(ResponseErrors.USER_HAS_NOT_ACCESS);
-            }
             await _chatRepository.DeleteAsync(chatId);
         }
 
-        public async Task<IEnumerable<DialogInfoResponse>> GetDialogs(Guid? offset_id, int count)
+        public async Task<IEnumerable<DialogInfoResponse>> GetDialogsAsync(Guid? offset_id, int count)
         {
             List<DialogInfoResponse> responses = new List<DialogInfoResponse>();
 
-            IEnumerable<Guid> chats = await _userChatsRepository.GetUserChats(_serviceContext.UserId);
-            if (offset_id != null)
+            IEnumerable<Guid> chats = await _userChatsRepository.GetUserChatsAsync(_serviceContext.UserId);
+            if (offset_id.HasValue)
             {
                 chats = chats.SkipWhile(x => x != offset_id).Skip(1);
             }
@@ -300,6 +231,33 @@ namespace MessengerAPI.Services
             }
 
             return responses;
+        }
+
+        public async Task DeleteMessageAsync(Guid chatId, Guid messagesId)
+        {
+            Message? message = await _messageRepository.GetAsync(messagesId);
+            if(message == null)
+            {
+                throw new ArgumentException(ResponseErrors.MESSAGE_NOT_FOUND);
+            }
+            if(message.Destination != chatId)
+            {
+                throw new InvalidOperationException(ResponseErrors.INVALID_DESTINATION);
+            }
+
+            await _messageRepository.GetAsync(messagesId);
+        }
+
+        public async Task<IEnumerable<RoleResponse>> GetRoles()
+        {
+            IEnumerable<UserType> userTypes = await _userTypesRepository.GetAll();
+            IEnumerable<RoleResponse> roles = new List<RoleResponse>();
+            foreach (UserType type in userTypes)
+            {
+                roles = roles.Append(new RoleResponse { Id=type.Id, IsDefault=type.IsDefault, Name=type.TypeName, Permissions=type.Permissions.Split(';'), PriorityLevel=type.PriorityLevel });
+            }
+
+            return roles;
         }
     }
 }

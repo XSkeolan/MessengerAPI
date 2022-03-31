@@ -13,19 +13,18 @@ namespace MessengerAPI.Services
             _userRepository = userRepository;
         }
 
-        public async Task<UserCreateResponse> GetUserByPhonenumber(string phoneNumber)
+        public async Task<UserResponse> GetUserByPhonenumber(string phoneNumber)
         {
             var user = await _userRepository.FindByPhonenumberAsync(phoneNumber);
             if (user == null)
                 throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
 
-            return new UserCreateResponse
+            return new UserResponse
             {
                 Id = user.Id,
                 IsConfirmed = user.IsConfirmed,
                 Name = user.Name,
                 Surname = user.Surname,
-                IsDeleted = user.IsDeleted,
                 Nickname = user.Nickname,
                 Phonenumber = user.Phonenumber
             };

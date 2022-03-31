@@ -5,14 +5,17 @@ namespace MessengerAPI.Interfaces
 {
     public interface IChatService
     {
-        Task CreateChatAsync(Chat chat);
-        Task<IEnumerable<UserResponse>> InviteUsersAsync(Guid chatId, IEnumerable<Guid> users);
-        Task<UserResponse> KickUsersAsync(Guid chatId, Guid userId);
-        Task<ChatResponse?> GetChatAsync(Guid chatId);
-        Task<ChatResponse?> EditNameAsync(Guid chatId, string name);
+        Task<Guid> CreateChatAsync(Chat chat);
+        Task<ShortUserResponse> InviteUserAsync(Guid chatId, Guid users);
+        Task KickUserAsync(Guid chatId, Guid userId);
+        Task<ChatResponse> GetChatAsync(Guid chatId);
+        Task EditNameAsync(Guid chatId, string name);
         Task DeleteChatAsync(Guid chatId);
-        Task<ChatResponse?> EditDescriptionAsync(Guid chatId, string name);
-        Task<IEnumerable<DialogInfoResponse>> GetDialogs(Guid? offset_id, int count);
-        Task<bool> EditChatAdmin(Guid chatId, Guid userId, bool isAdmin);
+        Task EditDescriptionAsync(Guid chatId, string name);
+        Task<IEnumerable<DialogInfoResponse>> GetDialogsAsync(Guid? offset_id, int count);
+        Task<bool> ChatIsAvaliableAsync(Guid chatId);
+        Task SetRole(Guid chatId, Guid userId, Guid roleId);
+        Task<IEnumerable<RoleResponse>> GetRoles();
+        Task DeleteMessageAsync(Guid chatId, Guid messagesId);
     }
 }

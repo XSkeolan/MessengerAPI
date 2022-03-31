@@ -20,9 +20,7 @@ namespace MessengerAPI.Controllers
         {
             try
             {
-                Guid userId = Guid.Parse(HttpContext.Items["User"].ToString());
-                Guid sessionId = Guid.Parse(HttpContext.Items["Session"].ToString());
-                await _signOutService.SignOut(sessionId, userId);
+                await _signOutService.SignOut();
                 return Ok();
             }
             catch

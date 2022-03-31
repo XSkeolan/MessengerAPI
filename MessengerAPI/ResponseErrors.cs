@@ -10,9 +10,21 @@
         public const string USER_ALREADY_AUTHORIZE = "You already authorize in this device. Use signOut method and after that use this method again";
         public const string USER_NOT_PARTICIPANT = "You're not a member of this chat";
         #endregion
+
+        #region Chat
         public const string CHAT_NOT_FOUND = "Chat not found";
         public const string CHAT_ADMIN_REQUIRED = "You must be an admin in this chat to do this.";
+        public const string CHAT_ADMIN_OR_MODER_REQUIRED = "You must be an admin or moderator in this chat to do this.";
         public const string CHAT_ADMIN_NOT_DELETED = "You must be an creator of this chat for kick admin";
+        public const string CHAT_MODER_NOT_DELETED = "You must be an administrator of this chat for kick moderator";
+        public const string CHAT_PRIVATE = "This chat is private";
+        public const string CHAT_ROLE_NOT_FOUND = "Chat role not found";
+        #endregion
+
+        #region Message
+        public const string MESSAGE_NOT_FOUND = "Message not found";
+        public const string INVALID_DESTINATION = "Message not found in this chat";
+        #endregion
         public const string PHONENUMBER_INCORRECT = "Phone number has an incorrect format";
         public const string ALREADY_EXISTS = "Some fields already exists";
         public const string INVALID_PASSWORD = "Password length must be from 10 to 32 chars";
@@ -25,11 +37,14 @@
         public const string INVALID_FIELDS = "Some fields is invalid";
         public const string INVALID_INVITE_USER = "One of users can not be invite";
         public const string EMPTY_MESSAGE = "Message is empty";
-        public const string MESSAGE_NOT_FOUND = "Message not found";
+        
         public const string DESTINATION_NOT_FOUND = "Destination of message not found";
         public const string TOKEN_EXPIRED = "The token has expired. Update Token";
         public const string UNUSED_CODE_NOT_EXIST = "This unused code does not exist. If you want send new code, use the method sendCode";
-        
+        public const string PERMISSION_DENIED = "Your rights do not allow you to perform this operation";
+
+
         public const string UNAUTHORIZE = "Unauthorize! To access this resource, sign in to the system(use signIn method)";
+        public const string INVALID_ROLE_FOR_OPENATION = "You have invalid role for this operation under this user";
     }
 }

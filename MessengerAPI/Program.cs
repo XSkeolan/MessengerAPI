@@ -19,6 +19,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(swagger =>
 {
+    swagger.SwaggerDoc("MessengerAPI-v1", new OpenApiInfo { Title = "Messenger API", Version="v1" });
     swagger.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
     {
         Name = "Authorization",
@@ -62,7 +63,6 @@ builder.Services.AddTransient<IMessageService, MessageService>();
 builder.Services.AddTransient<IUserService, UserService>();
 builder.Services.AddTransient<ISendCodeService, SendCodeService>();
 builder.Services.AddTransient<IConfirmationCodeRepository, ConfirmationCodeRepository>();
-builder.Services.AddTransient<IChatTypeRepository, ChatTypeRepository>();
 
 builder.Services.AddScoped<IServiceContext, ServiceContext>();
 
@@ -108,7 +108,10 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(swagger =>
+    {
+        swagger.SwaggerEndpoint("/swagger/MessengerAPI-v1/swagger.json", "Messanger API v1");
+    });
 }
 app.UseHttpsRedirection();
 

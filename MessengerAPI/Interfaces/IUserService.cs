@@ -4,6 +4,6 @@ namespace MessengerAPI.Services
 {
     public interface IUserService
     {
-        Task<UserCreateResponse> GetUserByPhonenumber(string phoneNumber);
+        Task<UserResponse> GetUserByPhonenumber(string phoneNumber);
     }
 }

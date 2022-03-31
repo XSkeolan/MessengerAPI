@@ -1,6 +1,6 @@
 ﻿namespace MessengerAPI.DTOs
 {
-    public class UserCreateResponse
+    public class UserResponse
     {
         /// <summary>
         /// Идентификатор пользователя
@@ -22,10 +22,6 @@
         /// Фамилия пользователя
         /// </summary>
         public string Surname { get; set; }
-        /// <summary>
-        /// Удалил ли пользователь аккаунт
-        /// </summary>
-        public bool IsDeleted { get; set; }
         /// <summary>
         /// Подтвержден ли email
         /// </summary>

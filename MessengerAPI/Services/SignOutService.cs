@@ -6,22 +6,17 @@ namespace MessengerAPI.Services
     public class SignOutService : ISignOutService
     {
         private readonly ISessionRepository _sessionRepository;
+        private readonly IServiceContext _serviceContext;
 
-        public SignOutService(ISessionRepository sessionRepository)
+        public SignOutService(ISessionRepository sessionRepository, IServiceContext serviceContext)
         {
             _sessionRepository = sessionRepository;
+            _serviceContext = serviceContext;
         }
 
-        public async Task SignOut(Guid sessionId, Guid userId)
+        public async Task SignOut()
         {
-            Session? session = await _sessionRepository.GetAsync(sessionId);
-            if (session == null)
-                throw new ArgumentException(ResponseErrors.SESSION_NOT_FOUND);
-
-            if (session.UserId != userId)
-                throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
-
-            await _sessionRepository.DeleteAsync(sessionId);
+            await _sessionRepository.UpdateAsync(_serviceContext.SessionId, DateTime.UtcNow);
         }
     }
 }

@@ -14,5 +14,9 @@
         /// Описание чата
         /// </summary>
         public string? Description { get; set; }
+        /// <summary>
+        /// Количество пользователей в канале
+        /// </summary>
+        public int CountUsers { get; set; }
     }
 }

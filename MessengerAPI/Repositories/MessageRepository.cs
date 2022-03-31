@@ -43,5 +43,13 @@ namespace MessengerAPI.Repositories
                 return await conn.QueryAsync<Message>("SELECT * FROM messages WHERE destination=@Destination AND isdeleted=false", new { Destination = destinationId });
             });
         }
+
+        public async Task UpdateAsync(Guid id, bool isPinned)
+        {
+            await Execute(async (conn) =>
+            {
+                return await conn.ExecuteAsync("UPDATE messages SET ispinned=@IsPinned WHERE id=@Id", new { Id = id, IsPinned = isPinned });
+            });
+        }
     }
 }

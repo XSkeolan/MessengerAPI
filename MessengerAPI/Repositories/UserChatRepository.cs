@@ -43,7 +43,7 @@ namespace MessengerAPI.Repositories
             });
         }
 
-        public async Task<IEnumerable<Guid>> GetUserChats(Guid userId)
+        public async Task<IEnumerable<Guid>> GetUserChatsAsync(Guid userId)
         {
             return await Execute(async (conn) =>
             {
@@ -67,7 +67,7 @@ namespace MessengerAPI.Repositories
             });
         }
 
-        public async Task Update(Guid id, Guid userTypeId)
+        public async Task UpdateAsync(Guid id, Guid userTypeId)
         {
             await Execute(async (conn) =>
             {

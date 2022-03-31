@@ -4,6 +4,7 @@ namespace MessengerAPI.Interfaces
 {
     public interface ISessionRepository : IRepository<Session>
     {
-        public Task<Session?> GetUnfinishedOnDeviceAsync(string device);
+        Task<Session?> GetUnfinishedOnDeviceAsync(string device);
+        Task UpdateAsync(Guid id, DateTime dateEnd);
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace MessengerAPI.DTOs
 {
-    public class UserResponse
+    public class ShortUserResponse
     {
         public Guid Id { get; set; }
         /// <summary>
@@ -18,6 +18,6 @@
         /// <summary>
         /// Тип пользователя в чате
         /// </summary>
-        public string UserType { get; set; }
+        public Guid UserTypeId { get; set; }
     }
 }

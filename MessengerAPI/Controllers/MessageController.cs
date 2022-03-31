@@ -74,7 +74,7 @@ namespace MessengerAPI.Controllers
                 return BadRequest(ResponseErrors.INVALID_FIELDS);
             }
 
-            return Ok(await _chatService.GetDialogs(offsetId, count));
+            return Ok(await _chatService.GetDialogsAsync(offsetId, count));
         }
     }
 }
