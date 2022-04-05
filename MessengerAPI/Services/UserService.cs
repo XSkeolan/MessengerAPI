@@ -13,13 +13,13 @@ namespace MessengerAPI.Services
             _userRepository = userRepository;
         }
 
-        public async Task<UserResponse> GetUserByPhonenumber(string phoneNumber)
+        public async Task<UserCreateResponse> GetUserByPhonenumber(string phoneNumber)
         {
             var user = await _userRepository.FindByPhonenumberAsync(phoneNumber);
             if (user == null)
                 throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
 
-            return new UserResponse
+            return new UserCreateResponse
             {
                 Id = user.Id,
                 IsConfirmed = user.IsConfirmed,
@@ -28,6 +28,18 @@ namespace MessengerAPI.Services
                 Nickname = user.Nickname,
                 Phonenumber = user.Phonenumber
             };
+        }
+
+        public async Task<IEnumerable<BaseUserResponse>> SearchUsers(string nickname)
+        {
+            IEnumerable<User> users = await _userRepository.FindByNicknameAsync(nickname);
+            return users.Select(user => new BaseUserResponse
+            { 
+                Id = user.Id,
+                Name = user.Name,
+                Surname = user.Surname,
+                Nickname = user.Nickname
+            });
         }
     }
 }

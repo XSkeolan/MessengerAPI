@@ -27,12 +27,11 @@ namespace MessengerAPI.Repositories
             });
         }
 
-        public async Task<User?> FindByNicknameAsync(string nickname)
+        public async Task<IEnumerable<User>> FindByNicknameAsync(string nickname)
         {
             return await Execute(async (conn) =>
             {
-                IEnumerable<User> users = await conn.QueryAsync<User>("SELECT * FROM Users WHERE nickname=@Nickname AND isdeleted=false", new { nickname });
-                return users.FirstOrDefault();
+                return await conn.QueryAsync<User>("SELECT * FROM Users WHERE nickname LIKE %@Nickname% AND isdeleted=false", new { nickname });
             });   
         }
 

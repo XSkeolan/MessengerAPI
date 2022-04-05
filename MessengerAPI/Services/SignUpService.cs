@@ -13,7 +13,7 @@ namespace MessengerAPI.Services
             _userRepository = userRepository;
         }
 
-        public async Task<UserResponse> SignUp(User user, string password)
+        public async Task<UserCreateResponse> SignUp(User user, string password)
         {
             if (await _userRepository.FindByPhonenumberAsync(user.Phonenumber) != null ||
                 await _userRepository.FindByNicknameAsync(user.Nickname) != null)
@@ -24,7 +24,7 @@ namespace MessengerAPI.Services
             user.Password = Password.GetHasedPassword(password);
             await _userRepository.CreateAsync(user);
 
-            UserResponse responseUser = new UserResponse
+            UserCreateResponse responseUser = new UserCreateResponse
             {
                 Id = user.Id,
                 Nickname = user.Nickname,

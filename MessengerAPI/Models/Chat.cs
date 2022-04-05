@@ -4,8 +4,8 @@
     {
         public string Name { get; set; }
         public string? Description { get; set; }
-        public InputFile? Photo { get; set; }
+        public Guid? PhotoId { get; set; }
         public DateTime Created { get; set; }
-        public Guid Creator { get; set; }
+        public Guid CreatorId { get; set; }
     }
 }

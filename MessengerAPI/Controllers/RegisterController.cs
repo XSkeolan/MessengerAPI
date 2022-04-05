@@ -54,7 +54,7 @@ namespace MessengerAPI.Controllers
 
             try
             {
-                UserResponse signUp = await _signUpService.SignUp(user, inputUser.Password);
+                UserCreateResponse signUp = await _signUpService.SignUp(user, inputUser.Password);
                 return Ok(signUp);
             }
             catch (ArgumentException ex)

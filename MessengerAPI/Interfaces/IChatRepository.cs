@@ -6,5 +6,6 @@ namespace MessengerAPI.Interfaces
     {
         Task UpdateAsync(Guid id, string name, string description);
         Task<Message?> GetLastMessage(Guid id);
+        Task UpdateAsync(Guid id, Guid photoId);
     }
 }

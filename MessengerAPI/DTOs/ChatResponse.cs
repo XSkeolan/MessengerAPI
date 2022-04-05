@@ -15,6 +15,10 @@
         /// </summary>
         public string? Description { get; set; }
         /// <summary>
+        /// Фотография чата
+        /// </summary>
+        public byte[] Photo { get; set; }
+        /// <summary>
         /// Количество пользователей в канале
         /// </summary>
         public int CountUsers { get; set; }

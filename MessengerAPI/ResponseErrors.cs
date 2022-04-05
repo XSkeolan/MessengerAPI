@@ -8,7 +8,7 @@
         public const string USER_ALREADY_HAS_CODE = "You already have a code that is not used. if you want to poison the code again, use the method resendCode";
         public const string USER_HAS_UNCONFIRMED_EMAIL = "You have an unconfirmed email. Confirm your email first for sending code";
         public const string USER_ALREADY_AUTHORIZE = "You already authorize in this device. Use signOut method and after that use this method again";
-        public const string USER_NOT_PARTICIPANT = "You're not a member of this chat";
+        public const string USER_NOT_PARTICIPANT = "This user is not a member of this chat";
         #endregion
 
         #region Chat
@@ -19,6 +19,7 @@
         public const string CHAT_MODER_NOT_DELETED = "You must be an administrator of this chat for kick moderator";
         public const string CHAT_PRIVATE = "This chat is private";
         public const string CHAT_ROLE_NOT_FOUND = "Chat role not found";
+        public const string USER_ALREADY_IN_CHAT = "One or more users from the invited list are already in the chat";
         #endregion
 
         #region Message
@@ -46,5 +47,7 @@
 
         public const string UNAUTHORIZE = "Unauthorize! To access this resource, sign in to the system(use signIn method)";
         public const string INVALID_ROLE_FOR_OPENATION = "You have invalid role for this operation under this user";
+        public const string FILE_IS_EMPTY = "Uploaded file is empty!";
+        public const string FILE_NOT_FOUND = "File not found";
     }
 }

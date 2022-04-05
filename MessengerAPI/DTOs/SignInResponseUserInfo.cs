@@ -13,6 +13,6 @@
         /// <summary>
         /// Пользователь вошедший в учетную запись
         /// </summary>
-        public UserResponse User { get; set; }
+        public UserCreateResponse User { get; set; }
     }
 }

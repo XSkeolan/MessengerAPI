@@ -60,7 +60,7 @@ namespace MessengerAPI.Services
             {
                 Token = encodedJwt,
                 Expiries = _expires,
-                User = new UserResponse
+                User = new UserCreateResponse
                 {
                     Id = user.Id,
                     Nickname = user.Nickname,

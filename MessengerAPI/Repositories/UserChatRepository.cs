@@ -71,7 +71,7 @@ namespace MessengerAPI.Repositories
         {
             await Execute(async (conn) =>
             {
-                return await conn.ExecuteAsync("UPDATE usergroup SET usertypeid=@UserTypeId WHERE groupid=@Id AND isdeleted=false", new { Id = id, UserTypeId = userTypeId });
+                return await conn.ExecuteAsync("UPDATE usergroup SET usertypeid=@UserTypeId WHERE id=@Id AND isdeleted=false", new { Id = id, UserTypeId = userTypeId });
             });
         }
     }

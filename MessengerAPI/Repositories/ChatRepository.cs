@@ -14,9 +14,9 @@ namespace MessengerAPI.Repositories
         {
             chat.Id = await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO groups (name, description, datecreate, ischannel) " +
-                    "VALUES(@Name, @Description, @DateCreate, @IsChannel) RETURNING id",
-                    new { Name = chat.Name, Description = chat.Description, /*Photo = chat.Photo,*/ DateCreate = chat.Created, IsChannel = false });
+                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO groups (name, description, datecreate, photoid, ischannel) " +
+                    "VALUES(@Name, @Description, @DateCreate, @PhotoId, @IsChannel) RETURNING id",
+                    new { Name = chat.Name, Description = chat.Description, PhotoId = chat.PhotoId, DateCreate = chat.Created, IsChannel = false });
             });
         }
 
@@ -42,6 +42,14 @@ namespace MessengerAPI.Repositories
             {
                 return await conn.ExecuteAsync("UPDATE groups SET name=@Name, description=@Description WHERE id=@Id AND isdeleted=false", 
                     new { Id = id, Name = name, Description=description });
+            });
+        }
+
+        public async Task UpdateAsync(Guid id, Guid photoId)
+        {
+            await Execute(async (conn) =>
+            {
+                return await conn.ExecuteAsync("UPDATE groups SET photoId=@PhotoId, WHERE id=@Id AND isdeleted=false", new { Id = id, PhotoId = photoId });
             });
         }
 
