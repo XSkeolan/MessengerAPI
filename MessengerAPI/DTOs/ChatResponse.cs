@@ -17,7 +17,7 @@
         /// <summary>
         /// Фотография чата
         /// </summary>
-        public byte[] Photo { get; set; }
+        public Guid? Photo { get; set; }
         /// <summary>
         /// Количество пользователей в канале
         /// </summary>

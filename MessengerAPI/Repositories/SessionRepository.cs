@@ -12,10 +12,10 @@ namespace MessengerAPI.Repositories
 
         public override async Task CreateAsync(Session session)
         {
-            session.Id = await Execute(async (conn) =>
+            await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO Sessions (datestart, userid, devicename, dateend) " +
-                    "VALUES(@DateStart, @UserId, @DeviceName, @DateEnd) RETURNING id", session);
+                return await conn.ExecuteAsync("INSERT INTO Sessions (id, datestart, userid, devicename, dateend, isdeleted) " +
+                    "VALUES(@Id, @DateStart, @UserId, @DeviceName, @DateEnd, @IsDeleted)", session);
             });
         }
 

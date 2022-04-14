@@ -11,10 +11,10 @@ namespace MessengerAPI.Repositories
 
         public override async Task CreateAsync(Models.File file)
         {
-            file.Id = await Execute(async (conn) =>
+            await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO files (path, server) " +
-                    "VALUES(@Path, @Server) RETURNING id", file);
+                return await conn.ExecuteAsync("INSERT INTO files (id, server, path, isdeleted) " +
+                    "VALUES(@Id, @Server, @Path, @IsDeleted)", file);
             });
         }
 

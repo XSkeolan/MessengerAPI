@@ -12,10 +12,10 @@ namespace MessengerAPI.Repositories
 
         public override async Task CreateAsync(User user)
         {
-            user.Id = await Execute(async (conn) =>
+            await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO Users (nickname, password, phonenumber, name, surname) " +
-                "VALUES(@Nickname, @Password, @Phonenumber, @Name, @Surname) RETURNING id", user);
+                return await conn.ExecuteAsync("INSERT INTO Users (id, nickname, password, phonenumber, name, surname, email, isconfirmed, isdeleted) " +
+                "VALUES(@Id, @Nickname, @Password, @Phonenumber, @Name, @Surname, @Email, @IsConfirmed, @IsDeleted)", user);
             });
         }
         
@@ -24,6 +24,14 @@ namespace MessengerAPI.Repositories
             await Execute(async (conn) =>
             {
                 return await conn.ExecuteAsync("UPDATE Users SET isdeleted=@IsDeleted WHERE id=@Id AND isdeleted=false", new { IsDeleted = true, Id = id });
+            });
+        }
+
+        public async Task DeleteAsync(Guid id, string reason)
+        {
+            await Execute(async (conn) =>
+            {
+                return await conn.ExecuteAsync("UPDATE Users SET isdeleted=@IsDeleted, reason=@Reason WHERE id=@Id AND isdeleted=false", new { IsDeleted = true, Id = id, Reason=reason });
             });
         }
 

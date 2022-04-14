@@ -29,6 +29,10 @@
         /// <summary>
         /// Является ли почта подтвержденной
         /// </summary>
-        public bool IsConfirmed { get; set; }
+        public bool IsConfirmed { get; set; } = false;
+        /// <summary>
+        /// Причина удаления аккаунта
+        /// </summary>
+        public string Reason { get; set; }
     }
 }

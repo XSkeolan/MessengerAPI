@@ -1,7 +1,6 @@
 ﻿using MessengerAPI.DTOs;
 using MessengerAPI.Interfaces;
 using MessengerAPI.Models;
-using MessengerAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,26 +21,35 @@ namespace MessengerAPI.Controllers
 
         [HttpPost]
         [Authorize]
-        [Route("sendMessage")]
         public async Task<IActionResult> SendMessage(MessageRequest request)
         {
-            if (string.IsNullOrEmpty(request.Message))
+            // добавить проверку на совместную пустоту(см сервис)
+            if (string.IsNullOrWhiteSpace(request.Message))
             {
                 return BadRequest(ResponseErrors.EMPTY_MESSAGE);
+            }
+            if (request.Attachment != null)
+            {
+                if(request.Attachment.Count()>5)
+                {
+                    return BadRequest(ResponseErrors.COUNT_FILES_VERY_LONG);
+                }
+                if (request.Attachment.All(file => file.Length == 0))
+                {
+                    return BadRequest(ResponseErrors.FILE_IS_EMPTY);
+                }
             }
 
             try
             {
                 Message message = new Message
                 {
-                    DateSend = DateTime.UtcNow,
                     Destination = request.Destination,
-                    Text = request.Message,
-                    ReplyMessageId = request.ReplyMessageId,
-                    OriginalMessageId = null
+                    Text = request.Message
                 };
-                MessageResponse response = await _messageService.SendMessageAsync(message);
-                return Created($"api/private/messages?id={response.MessageId}", response);
+
+                await _messageService.SendMessageAsync(message);
+                return Created($"api/private/messages?id={message.Id}", null);
             }
             catch (ArgumentException ex)
             {
@@ -51,20 +59,30 @@ namespace MessengerAPI.Controllers
 
         [HttpGet]
         [Authorize]
-        [Route("getMessages")]
-        public async Task<IActionResult> GetMessages(IEnumerable<Guid> ids)
+        [Route("getHistory")]
+        public async Task<IActionResult> GetHistory(Guid chatId, DateTime? dateStart, DateTime? dateEnd)
         {
-            try
+            if(!(dateStart.HasValue && dateEnd.HasValue))
             {
-                return Ok(/*await _messageService.GetMessagesAsync(userId, ids)*/);
+                return BadRequest(ResponseErrors.INVALID_FIELDS);
             }
-            catch (Exception ex)
+            if(dateStart>=dateEnd)
             {
-                return Forbid(ex.Message);
+                return BadRequest(ResponseErrors.INVALID_FIELDS);
             }
+
+            IEnumerable<Message> messages = await _messageService.GetHistoryAsync(chatId, dateStart, dateEnd);
+            return Ok(messages.Select(message => new MessageResponse 
+            {
+                MessageId = message.Id,
+                Message = message.Text,
+                Date = message.DateSend,
+                FromId = message.From,
+                IsPinned = message.IsPinned,
+            }));
         }
 
-        [HttpGet()]
+        [HttpGet]
         [Authorize]
         [Route("getDialogs")]
         public async Task<IActionResult> GetDialogs(Guid? offsetId, int count)
@@ -75,6 +93,81 @@ namespace MessengerAPI.Controllers
             }
 
             return Ok(await _chatService.GetDialogsAsync(offsetId, count));
+        }
+
+        [HttpPost]
+        [Authorize]
+        [Route("forwardMessage")]
+        public async Task<IActionResult> ForwardMessage(ForwardMessageRequest request)
+        {
+            if(!await _messageService.MessageIsAvaliableAsync(request.MessageId))
+            {
+                return BadRequest(ResponseErrors.MESSAGE_NOT_FOUND);
+            }
+
+            //федеральное правило
+            if(!await _chatService.ChatIsAvaliableAsync(request.ChatId))
+            {
+                return BadRequest(ResponseErrors.USER_NOT_PARTICIPANT);
+            }
+
+            Message message = new Message
+            {
+                Destination = request.ChatId,
+                OriginalMessageId = request.MessageId,
+                Text = request.Message
+            };
+
+            try
+            {
+                await _messageService.SendMessageAsync(message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+
+            return Created($"api/private/messages?id={message.Id}", null);
+        }
+
+        [HttpPost]
+        [Authorize]
+        [Route("replyOnMessage")]
+        public async Task<IActionResult> ReplyOnMessage(ReplyMessageRequest request)
+        {
+            if(!await _messageService.MessageIsAvaliableAsync(request.ReplyMessageId))
+            {
+                return BadRequest(ResponseErrors.MESSAGE_NOT_FOUND);
+            }
+
+            Message message = new Message
+            {
+                ReplyMessageId = request.ReplyMessageId,
+                Text = request.ReplyMessage
+            };
+
+            try
+            {
+                await _messageService.SendMessageAsync(message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+
+            return Created($"api/private/messages?id={message.Id}", null);
+        }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> GetMessage(Guid messageId)
+        {
+            if(!await _messageService.MessageIsAvaliableAsync(messageId))
+            {
+                return BadRequest(ResponseErrors.MESSAGE_NOT_FOUND);
+            }
+
+            return Ok(await _messageService.GetMessageAsync(messageId));
         }
     }
 }

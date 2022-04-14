@@ -12,10 +12,10 @@ namespace MessengerAPI.Repositories
 
         public override async Task CreateAsync(UserType userType)
         {
-            userType.Id = await Execute(async (conn) =>
+            await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO usertypes (typename, permissions, prioritylevel) " +
-                    "VALUES(@TypeName, @Permissions, @PriorityLevel) RETURNING id", userType);
+                return await conn.ExecuteAsync("INSERT INTO usertypes (id, typename, permissions, prioritylevel, isdefault, isdeleted) " +
+                    "VALUES(@Id, @TypeName, @Permissions, @PriorityLevel, @IsDefault, @IsDeleted)", userType);
             });
         }
 

@@ -9,7 +9,7 @@
         /// <summary>
         /// Дата отправки сообщения
         /// </summary>
-        public DateTime DateSend { get; set; }
+        public DateTime DateSend { get; set; } = DateTime.UtcNow;
         /// <summary>
         /// Отправитель сообщения
         /// </summary>
@@ -21,14 +21,18 @@
         /// <summary>
         /// Закреплено ли сообщение
         /// </summary>
-        public bool IsPinned { get; set; }
+        public bool IsPinned { get; set; } = false;
+        /// <summary>
+        /// Кто-то из пользователей прочитал сообщение
+        /// </summary>
+        public bool IsRead { get; set; } = false;
         /// <summary>
         /// Ссылка на сообщение-источник, если какое-то сообщение пересылают в другое место
         /// </summary>
-        public Guid? OriginalMessageId { get; set; }
+        public Guid? OriginalMessageId { get; set; } = null;
         /// <summary>
         /// Ссылка на сообщение, для которого это сообщение является ответом
         /// </summary>
-        public Guid? ReplyMessageId { get; set; }
+        public Guid? ReplyMessageId { get; set; } = null;
     }
 }

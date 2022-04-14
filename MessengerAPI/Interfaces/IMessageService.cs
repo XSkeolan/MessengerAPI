@@ -1,10 +1,18 @@
-﻿using MessengerAPI.DTOs;
-using MessengerAPI.Models;
+﻿using MessengerAPI.Models;
 
 namespace MessengerAPI.Interfaces
 {
     public interface IMessageService
     {
-        Task<MessageResponse> SendMessageAsync(Message message);
+        Task ChangePinStatusAsync(Guid messageId, bool status);
+        Task DeleteHistoryAsync(Guid chatId, Guid? maxMessageId);
+        Task DeleteMessageAsync(Guid messagesId);
+        Task EditMessageAsync(Guid messageId, string newText);
+        Task<IEnumerable<Message>> FindMessagesAsync(Guid chatId, string subtext);
+        Task<IEnumerable<Message>> GetHistoryAsync(Guid chatId, DateTime? dateStart, DateTime? dateEnd);
+        Task<Message> GetMessageAsync(Guid messageId);
+        Task<bool> MessageIsAvaliableAsync(Guid messageId);
+        Task ReadMessageAsync(Guid messageId);
+        Task SendMessageAsync(Message message);
     }
 }

@@ -1,5 +1,4 @@
-﻿using MessengerAPI.Models;
-namespace MessengerAPI.DTOs
+﻿namespace MessengerAPI.DTOs
 {
     public class MessageRequest
     {
@@ -12,8 +11,8 @@ namespace MessengerAPI.DTOs
         /// </summary>
         public Guid Destination { get; set; }
         /// <summary>
-        /// Идентификатор сообщения, на которое этим сообщением хотят ответить
+        /// Файлы приложенные к сообщению
         /// </summary>
-        public Guid? ReplyMessageId { get; set; }
+        public IEnumerable<byte[]>? Attachment { get; set; }
     }
 }

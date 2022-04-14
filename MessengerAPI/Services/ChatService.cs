@@ -1,5 +1,4 @@
-﻿using MessengerAPI.DTOs;
-using MessengerAPI.Interfaces;
+﻿using MessengerAPI.Interfaces;
 using MessengerAPI.Models;
 
 namespace MessengerAPI.Services
@@ -11,17 +10,15 @@ namespace MessengerAPI.Services
         private readonly IUserTypeRepository _userTypesRepository;
         private readonly IUserRepository _userRepository;
         private readonly IServiceContext _serviceContext;
-        private readonly IMessageRepository _messageRepository;
         private readonly IFileRepository _fileRepository;
 
-        public ChatService(IChatRepository chats, IUserChatRepository users, IUserTypeRepository userTypes, IUserRepository userRepository, IMessageRepository messageRepository, IFileRepository fileRepository, IServiceContext serviceContext)
+        public ChatService(IChatRepository chats, IUserChatRepository users, IUserTypeRepository userTypes, IUserRepository userRepository, IFileRepository fileRepository, IServiceContext serviceContext)
         {
             _chatRepository = chats;
             _userChatsRepository = users;
             _userTypesRepository = userTypes;
             _userRepository = userRepository;
             _serviceContext = serviceContext;
-            _messageRepository = messageRepository;
             _fileRepository = fileRepository;
         }
 
@@ -29,22 +26,6 @@ namespace MessengerAPI.Services
         {
             chat.CreatorId = _serviceContext.UserId;
             await _chatRepository.CreateAsync(chat);
-        }
-
-        public async Task<bool> ChatIsAvaliableAsync(Guid chatId)
-        {
-            Chat? chat = await _chatRepository.GetAsync(chatId);
-            if (chat == null)
-            {
-                return false;
-            }
-
-            if (!(await _userChatsRepository.GetChatUsers(chatId)).Contains(_serviceContext.UserId))
-            {
-                return false;
-            }
-
-            return true;
         }
 
         private async Task<bool> CurrentUserHaveRights(Guid chatId, string right, Guid? userId=null)
@@ -69,8 +50,10 @@ namespace MessengerAPI.Services
             }
         }
 
-        public async Task<ShortUserResponse> InviteUserAsync(Guid chatId, Guid userId)
+        public async Task<UserGroup> InviteUserAsync(Guid chatId, Guid userId)
         {
+            await GetChatAsync(chatId);
+
             User? user = await _userRepository.GetAsync(userId);
             if(user == null)
             {
@@ -99,17 +82,13 @@ namespace MessengerAPI.Services
 
             await _userChatsRepository.CreateAsync(userGroup);
 
-            return new ShortUserResponse
-            {
-                UserTypeId = userType.Id,
-                Name = user.Name,
-                Surname = user.Surname,
-                Nickname = user.Nickname
-            };
+            return userGroup;
         }
 
         public async Task SetRoleAsync(Guid chatId, Guid userId, Guid roleId)
         {
+            await GetChatAsync(chatId);
+
             User? user = await _userRepository.GetAsync(userId);
             if (user == null)
             {
@@ -148,6 +127,8 @@ namespace MessengerAPI.Services
 
         public async Task KickUserAsync(Guid chatId, Guid userId)
         {
+            await GetChatAsync(chatId);
+
             if (!await CurrentUserHaveRights(chatId, Permissions.KICK_USER))
             {
                 throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
@@ -176,24 +157,20 @@ namespace MessengerAPI.Services
             await _userChatsRepository.DeleteAsync(kickUserGroup.Id);
         }
 
-        public async Task<ChatResponse> GetChatAsync(Guid chatId)
+        public async Task<Chat> GetChatAsync(Guid chatId)
         {
             Chat? chat = await _chatRepository.GetAsync(chatId);
-            int count = (await _userChatsRepository.GetChatUsers(chatId)).Count();
-
-            ChatResponse response = new ChatResponse
+            if(chat == null)
             {
-                ChatId = chat.Id,
-                Name = chat.Name,
-                Description = chat.Description,
-                CountUsers = count
-            };
-
-            return response;
+                throw new ArgumentException(ResponseErrors.CHAT_NOT_FOUND);
+            }
+            return chat;
         }
 
         public async Task EditNameAsync(Guid chatId, string name)
         {
+            await GetChatAsync(chatId);
+
             if(!await CurrentUserHaveRights(chatId, Permissions.EDIT_CHAT_INFO))
             {
                 throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
@@ -204,6 +181,8 @@ namespace MessengerAPI.Services
 
         public async Task EditDescriptionAsync(Guid chatId, string description)
         {
+            await GetChatAsync(chatId);
+
             if (!await CurrentUserHaveRights(chatId, Permissions.EDIT_CHAT_INFO))
             {
                 throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
@@ -214,6 +193,8 @@ namespace MessengerAPI.Services
 
         public async Task DeleteChatAsync(Guid chatId)
         {
+            await GetChatAsync(chatId);
+
             if (!await CurrentUserHaveRights(chatId, Permissions.DELETE_CHAT))
             {
                 throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
@@ -222,9 +203,8 @@ namespace MessengerAPI.Services
             await _chatRepository.DeleteAsync(chatId);
         }
 
-        public async Task<IEnumerable<DialogInfoResponse>> GetDialogsAsync(Guid? offset_id, int count)
+        public async Task<IEnumerable<Chat>> GetDialogsAsync(Guid? offset_id, int count)
         {
-            List<DialogInfoResponse> responses = new List<DialogInfoResponse>();
             IEnumerable<Guid> chats = await _userChatsRepository.GetUserChatsAsync(_serviceContext.UserId);
 
             if (offset_id.HasValue)
@@ -233,83 +213,27 @@ namespace MessengerAPI.Services
             }
 
             chats = chats.Take(count);
-
-            foreach (Guid chatId in chats)
-            {
-                Chat? chat = await _chatRepository.GetAsync(chatId);
-                Message? message = await _chatRepository.GetLastMessage(chatId);
-                if (message == null)
-                {
-                    responses.Add(new DialogInfoResponse 
-                    { 
-                        Id = chat.Id, 
-                        Name = chat.Name, 
-                        Photo = 1, 
-                        LastMessageDateSend = null, 
-                        LastMessageText = null 
-                    });
-                }
-                else
-                {
-                    responses.Add(new DialogInfoResponse 
-                    { 
-                        Id = chat.Id, 
-                        Name = chat.Name, 
-                        Photo = 1, 
-                        LastMessageDateSend = message.DateSend, 
-                        LastMessageText = message.Text 
-                    });
-                }
-            }
-
-            return responses;
+            //сообщения возвращать из messageService в контроллере
+            return await Task.WhenAll(chats.Select(async x => await _chatRepository.GetAsync(x)));
         }
 
-        public async Task DeleteMessageAsync(Guid chatId, Guid messagesId)
+        public async Task<IEnumerable<UserType>> GetRolesAsync()
         {
-            Message? message = await _messageRepository.GetAsync(messagesId);
-            if(message == null)
-            {
-                throw new ArgumentException(ResponseErrors.MESSAGE_NOT_FOUND);
-            }
-            if(message.Destination != chatId)
-            {
-                throw new InvalidOperationException(ResponseErrors.INVALID_DESTINATION);
-            }
-
-            await _messageRepository.GetAsync(messagesId);
+            return await _userTypesRepository.GetAll();
         }
 
-        public async Task<IEnumerable<RoleResponse>> GetRolesAsync()
+        public async Task<IEnumerable<User>> SearchUsersAsync(Guid chatId, string nickname)
         {
-            IEnumerable<UserType> userTypes = await _userTypesRepository.GetAll();
+            await GetChatAsync(chatId);
 
-            return userTypes.Select(type => new RoleResponse
-            {
-                Id = type.Id,
-                IsDefault = type.IsDefault,
-                Name = type.TypeName,
-                Permissions = type.Permissions.Split(';'),
-                PriorityLevel = type.PriorityLevel
-            });
-        }
-
-        public async Task<IEnumerable<BaseUserResponse>> SearchUsersAsync(Guid chatId, string nickname)
-        {
             IEnumerable<Guid> users = await _userChatsRepository.GetChatUsers(chatId);
-            List<BaseUserResponse> results = new List<BaseUserResponse>();
+            List<User> results = new List<User>();
             foreach (Guid user in users)
             {
                 User? foundUser = await _userRepository.GetAsync(user);
                 if (foundUser.Nickname.Contains(nickname))
                 {
-                    results.Add(new BaseUserResponse 
-                    { 
-                        Id = foundUser.Id, 
-                        Name = foundUser.Name, 
-                        Surname = foundUser.Surname, 
-                        Nickname = foundUser.Nickname 
-                    });
+                    results.Add(foundUser);
                 }
             }
 
@@ -318,6 +242,8 @@ namespace MessengerAPI.Services
 
         public async Task EditPhotoAsync(Guid chatId, Guid fileId)
         {
+            await GetChatAsync(chatId);
+
             Models.File? file = await _fileRepository.GetAsync(fileId);
             if(file == null)
             {
@@ -325,22 +251,6 @@ namespace MessengerAPI.Services
             }
 
             await _chatRepository.UpdateAsync(chatId, fileId);
-        }
-
-        public async Task<Guid> UploadFile(byte[] byteFile)
-        {
-            var client = new HttpClient();
-            var response = await client.PostAsync("http://ure.ru", new ByteArrayContent(byteFile));
-            string filename = await response.Content.ReadAsStringAsync();
-
-            Models.File file = new Models.File
-            {
-                Server = "http://ure.ru",
-                Path = filename
-            };
-
-            await _fileRepository.CreateAsync(file);
-            return file.Id;
         }
 
         private async Task<byte[]> GetPhoto(Guid chatId)
@@ -355,7 +265,7 @@ namespace MessengerAPI.Services
             }
             else
             {
-                return new byte[] {4};
+                return Array.Empty<byte>();
             }
         }
     }

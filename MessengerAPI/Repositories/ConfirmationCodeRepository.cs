@@ -11,10 +11,10 @@ namespace MessengerAPI.Repositories
 
         public async override Task CreateAsync(ConfirmationCode confirmationCode)
         {
-            confirmationCode.Id = await Execute(async (conn) =>
+            await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO confirmationcode (code, userid, dateend) " +
-                "VALUES(@Code, @UserId, @DateEnd) RETURNING id", confirmationCode);
+                return await conn.ExecuteAsync("INSERT INTO confirmationcode (id, code, userid, isused, dateend, isdeleted) " +
+                "VALUES(@Code, @UserId, @DateEnd)", confirmationCode);
             });
         }
 

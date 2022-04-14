@@ -1,9 +1,10 @@
 ﻿namespace MessengerAPI.DTOs
 {
-    public class SearchUserInChatRequest
+    public class SearchUserInChatRequest : BaseSearchRequest
     {
+        /// <summary>
+        /// Идентификатор чата в котором нужно искать пользоватедя
+        /// </summary>
         public Guid ChatId { get; set; }
-        public string SubString { get; set; }
-        public int LimitResult { get; set; }
     }
 }

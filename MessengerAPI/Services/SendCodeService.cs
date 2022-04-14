@@ -59,7 +59,11 @@ namespace MessengerAPI.Services
             }
             while (await _codeRepository.UnUsedCodeExists(hashedCode));
 
-            await _codeRepository.CreateAsync(new ConfirmationCode { Code = hashedCode, UserId=user.Id });
+            await _codeRepository.CreateAsync(new ConfirmationCode 
+            { 
+                Code = hashedCode, 
+                UserId = user.Id 
+            });
 
             MailAddress from = new MailAddress(_email, _name);
             MailAddress to = new MailAddress(user.Email);

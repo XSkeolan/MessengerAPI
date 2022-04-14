@@ -45,10 +45,6 @@ builder.Services.AddSwaggerGen(swagger =>
     });
 });
 
-builder.Services.AddTransient<ISignUpService, SignUpService>();
-builder.Services.AddTransient<ISignInService, SignInService>();
-builder.Services.AddTransient<ISignOutService, SignOutService>();
-
 builder.Services.AddTransient<IUserRepository, UserRepository>();
 builder.Services.AddTransient<ISessionRepository, SessionRepository>();
 
@@ -63,6 +59,9 @@ builder.Services.AddTransient<IMessageService, MessageService>();
 builder.Services.AddTransient<IUserService, UserService>();
 builder.Services.AddTransient<ISendCodeService, SendCodeService>();
 builder.Services.AddTransient<IConfirmationCodeRepository, ConfirmationCodeRepository>();
+
+builder.Services.AddTransient<IFileRepository, FileRepository>();
+builder.Services.AddTransient<IFileService, FileService>();
 
 builder.Services.AddScoped<IServiceContext, ServiceContext>();
 

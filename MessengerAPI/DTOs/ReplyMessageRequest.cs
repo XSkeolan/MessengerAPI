@@ -1,0 +1,18 @@
+﻿namespace MessengerAPI.DTOs
+{
+    public class ReplyMessageRequest
+    {
+        /// <summary>
+        /// Идентификато сообщения на который нужно ответить
+        /// </summary>
+        public Guid ReplyMessageId { get; set; }
+        /// <summary>
+        /// Сообщение в ответ
+        /// </summary>
+        public string ReplyMessage { get; set; }
+        /// <summary>
+        /// Вложения к сообщению. Не обязательны
+        /// </summary>
+        public IEnumerable<byte[]>? Attachments { get; set; }
+    }
+}

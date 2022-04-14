@@ -2,7 +2,13 @@
 {
     public abstract class EntityBase
     {
-        public Guid Id { get; set; }
-        public bool IsDeleted { get; set; }
+        /// <summary>
+        /// Идентификатор
+        /// </summary>
+        public Guid Id { get; set; } = Guid.NewGuid();
+        /// <summary>
+        /// Удален ли объект
+        /// </summary>
+        public bool IsDeleted { get; set; } = false;
     }
 }

@@ -12,10 +12,10 @@ namespace MessengerAPI.Repositories
 
         public override async Task CreateAsync(UserGroup userChat)
         {
-            userChat.Id = await Execute(async (conn) =>
+            await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO usergroup (userid, groupid, usertypeid) " +
-                "VALUES(@UserId, @ChatId, @UserTypeId) RETURNING id", userChat);
+                return await conn.ExecuteAsync("INSERT INTO usergroup (id, userid, groupid, usertypeid, isdeleted) " +
+                "VALUES(@Id, @UserId, @ChatId, @UserTypeId, @IsDeleted)", userChat);
             });
         }
 
@@ -23,7 +23,7 @@ namespace MessengerAPI.Repositories
         {
             await Execute(async (conn) =>
             {
-                return await conn.ExecuteAsync("UPDATE usergroup SET isdeleted=@IsDeleted WHERE id=@Id AND isdeleted=false", new { IsDeleted = true, Id = id });
+                return await conn.ExecuteAsync("UPDATE usergroup SET isdeleted=true WHERE id=@Id AND isdeleted=false", new { Id = id });
             });
         }
 

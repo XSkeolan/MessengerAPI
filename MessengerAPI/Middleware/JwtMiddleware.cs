@@ -23,7 +23,7 @@ namespace MessengerAPI.Middleware
             if (context.Request.Path.Value.StartsWith("/api/private"))
             {
                 string jwtToken = context.Request.Headers.Authorization;
-                if (jwtToken == null)
+                if (string.IsNullOrEmpty(jwtToken))
                 {
                     context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                     await context.Response.WriteAsync(ResponseErrors.UNAUTHORIZE);
@@ -53,8 +53,10 @@ namespace MessengerAPI.Middleware
                     await context.Response.WriteAsync(ResponseErrors.SESSION_NOT_FOUND);
                     return;
                 }
+
                 serviceContext.ConfigureSession(session);
             }
+
             await _next(context);
         }
     }

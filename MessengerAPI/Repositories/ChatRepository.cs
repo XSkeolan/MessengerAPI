@@ -8,15 +8,19 @@ namespace MessengerAPI.Repositories
 {
     public class ChatRepository : BaseRepository<Chat>, IChatRepository
     {
-        public ChatRepository(IOptions<Connections> options) : base(options) { }
+        private readonly IServiceContext _serviceContext;
+
+        public ChatRepository(IOptions<Connections> options, IServiceContext serviceContext) : base(options)
+        {
+            _serviceContext = serviceContext;
+        }
 
         public override async Task CreateAsync(Chat chat)
         {
-            chat.Id = await Execute(async (conn) =>
+            await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<Guid>("INSERT INTO groups (name, description, datecreate, photoid, ischannel) " +
-                    "VALUES(@Name, @Description, @DateCreate, @PhotoId, @IsChannel) RETURNING id",
-                    new { Name = chat.Name, Description = chat.Description, PhotoId = chat.PhotoId, DateCreate = chat.Created, IsChannel = false });
+                return await conn.ExecuteAsync("INSERT INTO groups (id, name, description, datecreated, photoid, isdeleted) " +
+                    "VALUES(@Id, @Name, @Description, @DateCreated, @PhotoId, @IsDeleted)", chat);
             });
         }
 
@@ -32,7 +36,11 @@ namespace MessengerAPI.Repositories
         {
             return await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<Chat?>("SELECT * FROM groups WHERE id=@Id AND isdeleted=false", new { id });
+                return await conn.QueryFirstOrDefaultAsync<Chat?>("SELECT groups.id, name, description, datecreated, photoid, groups.isdeleted FROM (" +
+                    "SELECT * FROM groups" +
+                    "WHERE id=@Id AND isdeleted=false" +
+                    ") AS groups" +
+                    "JOIN usergroup ON groups.id=groupid AND userid=@UserId AND usergroup.isdeleted=false", new { Id = id, _serviceContext.UserId });
             });
         }
 
@@ -41,7 +49,7 @@ namespace MessengerAPI.Repositories
             await Execute(async (conn) =>
             {
                 return await conn.ExecuteAsync("UPDATE groups SET name=@Name, description=@Description WHERE id=@Id AND isdeleted=false", 
-                    new { Id = id, Name = name, Description=description });
+                    new { Id = id, Name = name, Description = description });
             });
         }
 
@@ -49,7 +57,7 @@ namespace MessengerAPI.Repositories
         {
             await Execute(async (conn) =>
             {
-                return await conn.ExecuteAsync("UPDATE groups SET photoId=@PhotoId, WHERE id=@Id AND isdeleted=false", new { Id = id, PhotoId = photoId });
+                return await conn.ExecuteAsync("UPDATE groups SET photoId=@PhotoId WHERE id=@Id AND isdeleted=false", new { Id = id, PhotoId = photoId });
             });
         }
 
