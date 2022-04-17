@@ -8,12 +8,7 @@ namespace MessengerAPI.Repositories
 {
     public class ChatRepository : BaseRepository<Chat>, IChatRepository
     {
-        private readonly IServiceContext _serviceContext;
-
-        public ChatRepository(IOptions<Connections> options, IServiceContext serviceContext) : base(options)
-        {
-            _serviceContext = serviceContext;
-        }
+        public ChatRepository(IOptions<Connections> options, IServiceContext serviceContext) : base(options, serviceContext) { }
 
         public override async Task CreateAsync(Chat chat)
         {
