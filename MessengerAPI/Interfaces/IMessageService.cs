@@ -14,5 +14,6 @@ namespace MessengerAPI.Interfaces
         Task<bool> MessageIsAvaliableAsync(Guid messageId);
         Task ReadMessageAsync(Guid messageId);
         Task SendMessageAsync(Message message);
+        Task<Message?> GetLastMessageAsync(Guid chatId);
     }
 }

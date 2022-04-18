@@ -17,7 +17,7 @@
         /// <summary>
         /// Последнее сообщение в чате
         /// </summary>
-        public string? LastMessageText { get; set; }
+        public string LastMessageText { get; set; }
         /// <summary>
         /// Сколько времени прошло с даты отправления последнего сообщения
         /// </summary>

@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using MessengerAPI.Models;
+using MessengerAPI.Interfaces;
 using MessengerAPI.Options;
 using Microsoft.Extensions.Options;
 
@@ -42,11 +43,11 @@ namespace MessengerAPI.Repositories
             });
         }
 
-        public async Task<bool> UserHasUnUsedCode(Guid userId)
+        public async Task<ConfirmationCode> GetUnsedCodeByUser(Guid userId)
         {
             return await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<ConfirmationCode>("SELECT * FROM confirmationcode WHERE userid=@UserId AND isdeleted=false AND isused=false", new { UserId = userId }) != null;
+                return await conn.QueryFirstOrDefaultAsync<ConfirmationCode>("SELECT * FROM confirmationcode WHERE userid=@UserId AND isdeleted=false AND isused=false", new { UserId = userId });
             });
         }
 
@@ -55,6 +56,14 @@ namespace MessengerAPI.Repositories
             await Execute(async (conn) =>
             {
                 return await conn.ExecuteAsync("UPDATE confirmationcode SET code=@Code WHERE id=@Id AND isdeleted=false", new { Code = codeHash, Id = id });
+            });
+        }
+
+        public async Task UpdateAsync(Guid id, bool isused)
+        {
+            await Execute(async (conn) =>
+            {
+                return await conn.ExecuteAsync("UPDATE confirmationcode SET isused=@IsUsed WHERE id=@Id AND isdeleted=false", new { IsUsed = isused, Id = id });
             });
         }
     }

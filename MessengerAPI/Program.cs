@@ -57,7 +57,6 @@ builder.Services.AddTransient<IMessageRepository, MessageRepository>();
 builder.Services.AddTransient<IMessageService, MessageService>();
 
 builder.Services.AddTransient<IUserService, UserService>();
-builder.Services.AddTransient<ISendCodeService, SendCodeService>();
 builder.Services.AddTransient<IConfirmationCodeRepository, ConfirmationCodeRepository>();
 
 builder.Services.AddTransient<IFileRepository, FileRepository>();

@@ -1,12 +1,12 @@
-﻿using MessengerAPI.Interfaces;
-using MessengerAPI.Models;
+﻿using MessengerAPI.Models;
 
-namespace MessengerAPI.Repositories
+namespace MessengerAPI.Interfaces
 {
     public interface IConfirmationCodeRepository : IRepository<ConfirmationCode>
     {
         public Task<bool> UnUsedCodeExists(string code);
-        public Task<bool> UserHasUnUsedCode(Guid userId);
         public Task UpdateAsync(Guid id, string code);
+        Task<ConfirmationCode> GetUnsedCodeByUser(Guid userId);
+        Task UpdateAsync(Guid id, bool isused);
     }
 }

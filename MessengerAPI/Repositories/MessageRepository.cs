@@ -67,5 +67,14 @@ namespace MessengerAPI.Repositories
                 return await conn.QueryAsync<Message>("SELECT * FROM messages WHERE destination=@Destination AND isdeleted=false", new { Destination = destinationId });
             });
         }
+
+        public async Task<Message?> GetLastMessage(Guid destinationId)
+        {
+            return await Execute(async (conn) =>
+            {
+                return await conn.QueryFirstOrDefaultAsync<Message?>("SELECT id, text, datesend, \"from\" FROM messages " +
+                    "WHERE destination=@Destination AND datesend = (SELECT max(datesend) FROM messages WHERE destination=@Destination)", new { Destination = destinationId });
+            });
+        }
     }
 }

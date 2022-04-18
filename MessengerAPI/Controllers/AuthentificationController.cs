@@ -23,7 +23,19 @@ namespace MessengerAPI.Controllers
         [Authorize]
         public async Task<IActionResult> GetUser(Guid id)
         {
-            return Ok();
+            User? user = await _userService.GetUser(id);
+            if(user == null)
+            {
+                return BadRequest(ResponseErrors.USER_NOT_FOUND);
+            }
+
+            return Ok(new BaseUserResponse
+            {
+                Id = id,
+                Name = user.Name,
+                Surname = user.Surname,
+                Nickname = user.Nickname
+            });
         }
 
         [HttpPatch("user")]
@@ -81,7 +93,11 @@ namespace MessengerAPI.Controllers
 
             try
             {
-                return Ok(await _userService.SignIn(inputUser.Phonenumber, inputUser.Password, Request.Headers.UserAgent));
+                return Ok(new SignInResponse
+                { 
+                    Expiries = _userService.TokenExpires,
+                    Token = await _userService.SignIn(inputUser.Phonenumber, inputUser.Password, Request.Headers.UserAgent)
+                });
             }
             catch (Exception ex)
             {
@@ -162,7 +178,7 @@ namespace MessengerAPI.Controllers
                 return BadRequest(ResponseErrors.INVALID_PASSWORD);
             }
 
-            if(!await _userService.CheckCode(code))
+            if(!await _userService.CheckCodeAsync(code))
             {
                 return BadRequest(ResponseErrors.INVALID_CODE);
             }

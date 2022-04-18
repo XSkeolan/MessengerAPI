@@ -1,11 +1,15 @@
 ﻿namespace MessengerAPI.DTOs
 {
-    public class UserCreateResponse : BaseUserResponse
+    public class UserFullResponse : BaseUserResponse
     {
         /// <summary>
         /// Номер телефона пользователя
         /// </summary>
         public string Phonenumber { get; set; }
+        /// <summary>
+        /// Email пользователя
+        /// </summary>
+        public string Email { get; set; }
         /// <summary>
         /// Подтвержден ли email
         /// </summary>

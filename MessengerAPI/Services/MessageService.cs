@@ -62,7 +62,7 @@ namespace MessengerAPI.Services
             await _messageRepository.CreateAsync(message);
         }
 
-        public async Task<Message> GetMessageAsync(Guid messageId)
+        public async Task<Message?> GetMessageAsync(Guid messageId)
         {
             return await _messageRepository.GetAsync(messageId);
         }
@@ -162,6 +162,15 @@ namespace MessengerAPI.Services
         {
             // федеральные правила
             return (await _messageRepository.GetMessagesByDestination(chatId)).Where(x=> x.Text.Contains(subtext));
+        }
+
+        public async Task<Message?> GetLastMessageAsync(Guid chatId)
+        {
+            if(await _chatRepository.GetAsync(chatId) == null)
+            {
+                throw new ArgumentException(ResponseErrors.CHAT_NOT_FOUND);
+            }
+            return await _messageRepository.GetLastMessage(chatId);
         }
     }
 }

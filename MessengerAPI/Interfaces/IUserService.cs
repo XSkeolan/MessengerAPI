@@ -1,16 +1,25 @@
-﻿using MessengerAPI.DTOs;
-using MessengerAPI.Models;
+﻿using MessengerAPI.Models;
 
 namespace MessengerAPI.Services
 {
     public interface IUserService
     {
+        public int TokenExpires { get; }
+        public int EmailCodeExpires { get; }
+
+        Task SignUp(User user, string password);
+        Task<string> SignIn(string phonenumber, string password, string deviceName);
+        Task SignOut();
+
         Task<User> GetUserByPhonenumber(string phoneNumber);
         Task<IEnumerable<User>> SearchUsersGlobal(string nickname);
-        Task SignUp(User user, string password);
-        Task SignOut();
-        Task<SignInResponseUserInfo> SignIn(string phonenumber, string password, string deviceName);
         Task ChangePassword(string newPassword);
-        Task<bool> CheckCode(string code);
+        Task<User?> GetUser(Guid id);
+        Task DeleteUser(string reason);
+        Task UpdateStatus(string status);
+        Task<bool> ConfirmEmail(string code);
+        Task SendCodeAsync();
+        Task ResendCodeAsync();
+        Task<bool> CheckCodeAsync(string code);
     }
 }

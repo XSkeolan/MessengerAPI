@@ -60,14 +60,5 @@ namespace MessengerAPI.Repositories
                 return await conn.ExecuteAsync("UPDATE groups SET photoId=@PhotoId WHERE id=@Id AND isdeleted=false", new { Id = id, PhotoId = photoId });
             });
         }
-
-        public async Task<Message?> GetLastMessage(Guid id)
-        {
-            return await Execute(async (conn) =>
-            {
-                return await conn.QueryFirstOrDefaultAsync<Message?>("SELECT id, text, datesend, \"from\" FROM messages " +
-                    "WHERE destination=@Destination AND datesend = (SELECT max(datesend) FROM messages WHERE destination=@Destination)", new { Destination = id});
-            });
-        }
     }
 }

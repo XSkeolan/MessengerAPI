@@ -92,7 +92,29 @@ namespace MessengerAPI.Controllers
                 return BadRequest(ResponseErrors.INVALID_FIELDS);
             }
 
-            return Ok(await _chatService.GetDialogsAsync(offsetId, count));
+            IEnumerable<Chat> dialogs = await _chatService.GetDialogsAsync(offsetId, count);
+            IEnumerable<Message?> lastMessages = await Task.WhenAll(dialogs.Select(async (dialog) =>
+            {
+                return await _messageService.GetLastMessageAsync(dialog.Id);
+            }));
+
+            List<DialogInfoResponse> responses = new List<DialogInfoResponse>();
+            using (var dialogEnumearator = dialogs.GetEnumerator())
+            using (var messageEnmerator = lastMessages.GetEnumerator())
+            {
+                while (dialogEnumearator.MoveNext() && messageEnmerator.MoveNext())
+                {
+                    responses.Add(new DialogInfoResponse
+                    {
+                        Id = dialogEnumearator.Current.Id,
+                        Name = dialogEnumearator.Current.Name,
+                        //Photo = dialogEnumearator.Current.PhotoId,
+                        LastMessageText = messageEnmerator.Current.Text,
+                        LastMessageDateSend = messageEnmerator.Current.DateSend
+                    });
+                }
+            }
+            return Ok(responses);
         }
 
         [HttpPost]
@@ -105,10 +127,13 @@ namespace MessengerAPI.Controllers
                 return BadRequest(ResponseErrors.MESSAGE_NOT_FOUND);
             }
 
-            //федеральное правило
-            if(!await _chatService.ChatIsAvaliableAsync(request.ChatId))
+            try
             {
-                return BadRequest(ResponseErrors.USER_NOT_PARTICIPANT);
+                await _chatService.GetChatAsync(request.ChatId);
+            }
+            catch
+            {
+                return BadRequest(ResponseErrors.CHAT_NOT_FOUND);
             }
 
             Message message = new Message

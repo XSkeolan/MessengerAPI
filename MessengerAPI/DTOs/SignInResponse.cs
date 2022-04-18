@@ -1,6 +1,6 @@
 ﻿namespace MessengerAPI.DTOs
 {
-    public class SignInResponseUserInfo
+    public class SignInResponse
     {
         /// <summary>
         /// Токен авторизации
@@ -10,9 +10,5 @@
         /// Время жизни токена в секундах
         /// </summary>
         public int Expiries { get; set; }
-        /// <summary>
-        /// Пользователь вошедший в учетную запись
-        /// </summary>
-        public UserCreateResponse User { get; set; }
     }
 }

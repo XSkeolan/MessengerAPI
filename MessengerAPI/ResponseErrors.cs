@@ -9,6 +9,8 @@
         public const string USER_HAS_UNCONFIRMED_EMAIL = "You have an unconfirmed email. Confirm your email first for sending code";
         public const string USER_ALREADY_AUTHORIZE = "You already authorize in this device. Use signOut method and after that use this method again";
         public const string USER_NOT_PARTICIPANT = "This user is not a member of this chat";
+        public const string USER_EMAIL_NOT_SET = "You must first add an email to your profile, then confirm it";
+        public const string USER_HAS_NOT_CODE = "You have not confirmation code";
         #endregion
 
         #region Chats
