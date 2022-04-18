@@ -75,13 +75,13 @@ namespace MessengerAPI.Services
             User user = await _userRepository.GetAsync(_serviceContext.UserId);
             if(user.Password != hasedPassword)
             {
-                await _userRepository.UpdateAsync(hasedPassword);
+                //await _userRepository.UpdateAsync(hasedPassword);
             }
         }
 
         public async Task UpdateStatus(string status)
         {
-            await _userRepository.UpdateAsync(status);
+            //await _userRepository.UpdateAsync(status);
         }
 
         public async Task ConfirmEmail()
@@ -171,6 +171,11 @@ namespace MessengerAPI.Services
         public async Task SignOut()
         {
             await _sessionRepository.UpdateAsync(_serviceContext.SessionId, DateTime.UtcNow);
+        }
+
+        public Task<bool> CheckCode(string code)
+        {
+            throw new NotImplementedException();
         }
     }
 }

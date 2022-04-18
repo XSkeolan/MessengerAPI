@@ -18,6 +18,11 @@ namespace MessengerAPI.Repositories
             _serviceContext = serviceContext;
         }
 
+        public BaseRepository(IOptions<Connections> options)
+        {
+            _connectionString = options.Value.MessengerAPI;
+        }
+
         protected async Task<TResult> Execute<TResult>(Func<IDbConnection, Task<TResult>> func)
         {
             using var conn = new NpgsqlConnection(_connectionString);
@@ -37,7 +42,7 @@ namespace MessengerAPI.Repositories
         {
             using var conn = new NpgsqlConnection(_connectionString);
             conn.Open();
-            string from = $"AS tempTable JOIN usergroup ON tempTable.id={fieldName} AND userid={_serviceContext.UserId} AND usergroup.isdeleted=false";
+            string from = $"AS tempTable JOIN usergroup ON tempTable.id={fieldName} AND userid='{_serviceContext.UserId}' AND usergroup.isdeleted=false";
             return await func(conn, from);
         }
 
@@ -45,9 +50,15 @@ namespace MessengerAPI.Repositories
         {
             using var conn = new NpgsqlConnection(_connectionString);
             conn.Open();
-            string from = $"AS tempTable JOIN {nameof(TTable).ToLower()} ON tempTable.id={fieldName} AND userid={_serviceContext.UserId} AND {nameof(TTable).ToLower()}.isdeleted=false";
+            string from = $"AS tempTable JOIN {typeof(TTable).Name.ToLower()} ON tempTable.id={fieldName} AND userid='{_serviceContext.UserId}' AND {typeof(TTable).Name.ToLower()}.isdeleted=false";
             return await func(conn, from);
         }
+
+        protected string QueryUpdate(string tabelField, string value, Guid id) //
+        {
+            return $"UPDATE table SET {tabelField}='{value}' WHERE Id='{id}'";
+        }
+
 
         public abstract Task CreateAsync(TEntity entity);
         public abstract Task DeleteAsync(Guid id);

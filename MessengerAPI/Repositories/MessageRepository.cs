@@ -67,5 +67,15 @@ namespace MessengerAPI.Repositories
                 return await conn.QueryAsync<Message>("SELECT * FROM messages WHERE destination=@Destination AND isdeleted=false", new { Destination = destinationId });
             });
         }
+
+        public Task<Message> GetLastInChatAsync(Guid chatId)
+        {
+            throw new NotImplementedException();
+        }
+
+        //public Task<Message> GetLastInChatAsync(Guid chatId)
+        //{
+
+        //}
     }
 }

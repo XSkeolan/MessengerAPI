@@ -106,10 +106,10 @@ namespace MessengerAPI.Controllers
             }
 
             //федеральное правило
-            if(!await _chatService.ChatIsAvaliableAsync(request.ChatId))
-            {
-                return BadRequest(ResponseErrors.USER_NOT_PARTICIPANT);
-            }
+            //if(!await _chatService.ChatIsAvaliableAsync(request.ChatId))
+            //{
+            //    return BadRequest(ResponseErrors.USER_NOT_PARTICIPANT);
+            //}
 
             Message message = new Message
             {

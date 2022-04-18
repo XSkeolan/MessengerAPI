@@ -8,5 +8,6 @@ namespace MessengerAPI.Interfaces
         Task UpdateAsync(Guid id, bool isPinned);
         Task UpdateAsync(Guid id, string text);
         Task UpdateAsync(Guid id);
+        Task<Message> GetLastInChatAsync(Guid chatId);
     }
 }
