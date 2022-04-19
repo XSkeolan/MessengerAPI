@@ -91,6 +91,11 @@ namespace MessengerAPI.Services
             return await _userRepository.GetAsync(id);
         }
 
+        public async Task UpdateUser()
+        {
+
+        }
+
         public async Task DeleteUser(string reason)
         {
             await _userRepository.DeleteAsync(_serviceContext.UserId, reason);
@@ -100,10 +105,11 @@ namespace MessengerAPI.Services
         {
             string hasedPassword = Password.GetHasedPassword(password);
             User user = await _userRepository.GetAsync(_serviceContext.UserId);
-            if (user.Password != hasedPassword)
+            if (user.Password == hasedPassword)
             {
-                //await _userRepository.UpdateAsync(hasedPassword);
+                throw new ArgumentException(ResponseErrors.PASSWORD_ALREADY_SET);
             }
+            //await _userRepository.UpdateAsync(hasedPassword);
         }
 
         public async Task UpdateStatus(string status)
@@ -114,7 +120,6 @@ namespace MessengerAPI.Services
         public async Task<bool> ConfirmEmail(string code)
         {
             User user = await _userRepository.GetAsync(_serviceContext.UserId);
-
             if (!user.IsConfirmed)
             {
                 if(await CheckCodeAsync(code))
@@ -196,6 +201,16 @@ namespace MessengerAPI.Services
             return claimsIdentity;
         }
 
+        private List<Claim> GetClaimsForEmail(User user)
+        {
+            return new List<Claim>
+            {
+                new Claim(ClaimsIdentity.DefaultNameClaimType, user.Id.ToString(), "Guid"),
+                new Claim("Email", user.Email, "string"),
+                new Claim(ClaimsIdentity.DefaultRoleClaimType, "user")
+            };
+        }
+
         public async Task<bool> CheckCodeAsync(string code)
         {
             ConfirmationCode confirmationCode = await _codeRepository.GetUnsedCodeByUser(_serviceContext.UserId);
@@ -216,9 +231,13 @@ namespace MessengerAPI.Services
             }
         }
 
-        private async void SendToEmailAsync(string subject, string content)
+        public async Task SendToEmailAsync(string subject, string content)
         {
             User user = await _userRepository.GetAsync(_serviceContext.UserId);
+            if(string.IsNullOrWhiteSpace(user.Email))
+            {
+                throw new InvalidOperationException(ResponseErrors.USER_EMAIL_NOT_SET);
+            }
 
             MailAddress from = new MailAddress(_email, _name);
             MailAddress to = new MailAddress(user.Email);
@@ -240,12 +259,7 @@ namespace MessengerAPI.Services
 
         public async Task SendCodeAsync()
         {
-            User? user = await _userRepository.GetAsync(_serviceContext.UserId);
-            if (user == null)
-            {
-                throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
-            }
-
+            User user = await _userRepository.GetAsync(_serviceContext.UserId);
             if (!user.IsConfirmed)
             {
                 throw new InvalidOperationException(ResponseErrors.USER_HAS_UNCONFIRMED_EMAIL);

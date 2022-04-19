@@ -1,6 +1,6 @@
 ﻿using MessengerAPI.Models;
 
-namespace MessengerAPI.Services
+namespace MessengerAPI.Interfaces
 {
     public interface IUserService
     {
@@ -21,5 +21,7 @@ namespace MessengerAPI.Services
         Task SendCodeAsync();
         Task ResendCodeAsync();
         Task<bool> CheckCodeAsync(string code);
+        Task SendToEmailAsync(string subject, string content);
+        Task UpdateUser();
     }
 }

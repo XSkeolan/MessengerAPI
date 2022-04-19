@@ -11,6 +11,7 @@
         public const string USER_NOT_PARTICIPANT = "This user is not a member of this chat";
         public const string USER_EMAIL_NOT_SET = "You must first add an email to your profile, then confirm it";
         public const string USER_HAS_NOT_CODE = "You have not confirmation code";
+        public const string PASSWORD_ALREADY_SET = "This password already set";
         #endregion
 
         #region Chats

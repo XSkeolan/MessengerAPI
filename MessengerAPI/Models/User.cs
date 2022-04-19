@@ -31,8 +31,12 @@
         /// </summary>
         public bool IsConfirmed { get; set; } = false;
         /// <summary>
+        /// Статус пользователя
+        /// </summary>
+        public string Status { get; set; } = string.Empty;
+        /// <summary>
         /// Причина удаления аккаунта
         /// </summary>
-        public string Reason { get; set; }
+        public string Reason { get; set; } = string.Empty;
     }
 }

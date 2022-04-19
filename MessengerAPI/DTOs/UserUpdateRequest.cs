@@ -14,5 +14,9 @@
         /// Новый никнейм пользователя
         /// </summary>
         public string NickName { get; set; }
+        /// <summary>
+        /// Новый Email
+        /// </summary>
+        public string Email { get; set; }
     }
 }
