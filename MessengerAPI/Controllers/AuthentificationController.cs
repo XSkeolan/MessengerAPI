@@ -7,7 +7,7 @@ using MessengerAPI.Models;
 
 namespace MessengerAPI.Controllers
 {
-    [Route("api/auth")]
+    [Route("api/private/auth")]
     [ApiController]
     public class AuthentificationController : ControllerBase
     {
@@ -105,30 +105,31 @@ namespace MessengerAPI.Controllers
             string link;
             try
             {
-                link = await _linkService.GetEmailLink();
+                string emailToken = await _userService.CreateEmailToken();
+                link = await _linkService.GetEmailLink(emailToken);
                 await _userService.SendToEmailAsync("Подтверждение почты", "Мы рады, что вы используете наш сервис. Чтобы подтвердить ваш аккаунт, перейдите по ссылке\n" + link);
 
                 return Ok();
             }
-            catch(InvalidCastException ex)
+            catch(InvalidOperationException ex)
             {
                 return BadRequest(ex.Message);
             }
         }
 
-        [HttpGet("confirm")]
+        [HttpGet("/api/public/auth/confirm")]
         [AllowAnonymous]
-        public async Task<IActionResult> ConfirmEmail(string emailHash)
+        public async Task<IActionResult> ConfirmEmail(string emailToken)
         {
-            if(string.IsNullOrWhiteSpace(emailHash))
+            if(string.IsNullOrWhiteSpace(emailToken))
             {
                 return BadRequest(ResponseErrors.INVALID_FIELDS);
             }
-            //разкодировать параметр
-            return Ok();
+            
+            return Ok(await _userService.ConfirmEmail(emailToken));
         }
 
-        [HttpPost("signIn")]
+        [HttpPost("/api/public/auth/signIn")]
         [AllowAnonymous]
         public async Task<IActionResult> SignIn(SignInRequest inputUser)
         {
@@ -146,7 +147,7 @@ namespace MessengerAPI.Controllers
             {
                 return Ok(new SignInResponse
                 {
-                    Expiries = _userService.TokenExpires,
+                    Expiries = _userService.SessionExpires,
                     Token = await _userService.SignIn(inputUser.Phonenumber, inputUser.Password, Request.Headers.UserAgent)
                 });
             }
@@ -156,7 +157,7 @@ namespace MessengerAPI.Controllers
             }
         }
 
-        [HttpPost("signUp")]
+        [HttpPost("/api/public/auth/signUp")]
         [AllowAnonymous]
         public async Task<IActionResult> Register(SignUpRequestUser inputUser)
         {
@@ -216,7 +217,7 @@ namespace MessengerAPI.Controllers
             }
         }
 
-        [HttpPost]
+        [HttpPost("/api/public/auth/recover")]
         [AllowAnonymous]
         public async Task<IActionResult> RecoverPassword(string code, string newPassword)
         {

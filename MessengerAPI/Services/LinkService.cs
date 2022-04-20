@@ -14,7 +14,7 @@ namespace MessengerAPI.Services
             _serviceContext = serviceContext;
         }
 
-        public async Task<string> GetEmailLink()
+        public async Task<string> GetEmailLink(string emailToken)
         {
             User user = await _userRepository.GetAsync(_serviceContext.UserId);
             if (string.IsNullOrWhiteSpace(user.Email))
@@ -22,7 +22,7 @@ namespace MessengerAPI.Services
                 throw new InvalidOperationException(ResponseErrors.USER_EMAIL_NOT_SET);
             }
 
-            return "api/auth/confirm" + "?e=" +  Password.GetHasedPassword(user.Email);
+            return "api/auth/confirm" + "?e=" + emailToken;
         }
 
         public async Task<string> GetChannelLink()

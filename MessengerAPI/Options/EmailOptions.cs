@@ -7,6 +7,5 @@
         public string Password { get; set; }
         public string SmtpServer { get; set; }
         public int Port { get; set; }
-        public int Expires { get; set; }
     }
 }

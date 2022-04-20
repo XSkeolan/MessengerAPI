@@ -22,17 +22,17 @@ namespace MessengerAPI.Services
         private readonly string _issuer;
         private readonly string _audience;
         private readonly string _key;
-        private readonly int _tokenExpires;
+        private readonly int _sessionExpires;
+        private readonly int _emailLinkExpires;
 
         private readonly string _email;
         private readonly string _password;
         private readonly string _name;
         private readonly string _server;
         private readonly int _port;
-        private readonly int _emailExpires;
 
         public UserService(IOptions<EmailOptions> emailOptions,
-            IOptions<JWTOptions> options, 
+            IOptions<JwtOptions> options, 
             IUserRepository userRepository, 
             IUserChatRepository userChatRepository,
             ISessionRepository sessionRepository,
@@ -48,18 +48,18 @@ namespace MessengerAPI.Services
             _issuer = options.Value.Issuer;
             _audience = options.Value.Audience;
             _key = options.Value.Key;
-            _tokenExpires = options.Value.Expires;
+            _sessionExpires = options.Value.SessionExpires;
+            _emailLinkExpires = options.Value.EmailLinkExpires;
 
             _email = emailOptions.Value.Email;
             _password = emailOptions.Value.Password;
             _name = emailOptions.Value.Name;
             _server = emailOptions.Value.SmtpServer;
             _port = emailOptions.Value.Port;
-            _emailExpires = emailOptions.Value.Expires;
         }
 
-        public int EmailCodeExpires { get => _emailExpires; }
-        public int TokenExpires { get => _tokenExpires; }
+        public int EmailCodeExpires { get => _emailLinkExpires; }
+        public int SessionExpires { get => _sessionExpires; }
 
         public async Task<User> GetUserByPhonenumber(string phoneNumber)
         {
@@ -117,29 +117,16 @@ namespace MessengerAPI.Services
             //await _userRepository.UpdateAsync(status);
         }
 
-        public async Task<bool> ConfirmEmail(string code)
-        {
-            User user = await _userRepository.GetAsync(_serviceContext.UserId);
-            if (!user.IsConfirmed)
-            {
-                if(await CheckCodeAsync(code))
-                {
-                    //_userRepository.UpdateAsync(user.Id, true);
-                }
-
-                // Отправку нужно делать при изменинии профиля
-                //SendToEmail("Подтверждение email", "");
-            }
-
-            return false;
-        }
-
         public async Task SignUp(User user, string password)
         {
             if (await _userRepository.FindByPhonenumberAsync(user.Phonenumber) != null ||
                 await _userRepository.FindByNicknameAsync(user.Nickname) != null)
             {
                 throw new ArgumentException(ResponseErrors.ALREADY_EXISTS);
+            }
+            if(!string.IsNullOrWhiteSpace(user.Email) && await _userRepository.FindByConfirmedEmailAsync(user.Email) != null)
+            {
+                throw new ArgumentException(ResponseErrors.EMAIL_ALREADY_EXIST);
             }
 
             user.Password = Password.GetHasedPassword(password);
@@ -165,50 +152,90 @@ namespace MessengerAPI.Services
                 DateStart = DateTime.UtcNow,
                 UserId = user.Id,
                 DeviceName = deviceName,
-                DateEnd = DateTime.UtcNow.AddSeconds(_tokenExpires)
+                DateEnd = DateTime.UtcNow.AddSeconds(_sessionExpires)
             };
             await _sessionRepository.CreateAsync(session);
 
-            var identity = GetIdentity(session);
+            return await CreateSessionToken(session);    
+        }
+
+        private async Task<string> CreateSessionToken(Session session)
+        {
+            List<Claim> claims = new List<Claim>
+            {
+                new Claim(ClaimsIdentity.DefaultNameClaimType, session.Id.ToString(), "Guid"),
+                new Claim("DateEnd", session.DateEnd.ToString(), "DateTime"),
+                new Claim(ClaimsIdentity.DefaultRoleClaimType, "user")
+            };
+
+            return CreateJwtToken(claims, session.DateStart, session.DateEnd);
+
+        }
+
+        public async Task<string> CreateEmailToken()
+        {
+            User? user = await _userRepository.GetAsync(_serviceContext.UserId);
+            if (user == null)
+            {
+                throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
+            }
+            if (string.IsNullOrWhiteSpace(user.Email))
+            {
+                throw new ArgumentException(ResponseErrors.USER_EMAIL_NOT_SET);
+            }
+
+            List<Claim> claims = new List<Claim>
+            {
+                new Claim(ClaimsIdentity.DefaultNameClaimType, user.Id.ToString(), "Guid"),
+                new Claim("Email", user.Email)
+            };
+
+            return CreateJwtToken(claims, DateTime.UtcNow, DateTime.UtcNow.AddSeconds(_emailLinkExpires));
+        }
+
+        private string CreateJwtToken(IEnumerable<Claim> claims, DateTime notBefore, DateTime expires)
+        {
             var jwt = new JwtSecurityToken(
                     issuer: _issuer,
                     audience: _audience,
-                    notBefore: session.DateStart,
-                    claims: identity.Claims,
-                    expires: session.DateEnd,
+                    notBefore: notBefore,
+                    claims: claims,
+                    expires: expires,
                     signingCredentials: new SigningCredentials(new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_key)), SecurityAlgorithms.HmacSha256));
-            var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
 
-            return encodedJwt;    
+            return new JwtSecurityTokenHandler().WriteToken(jwt);
+        }
+
+        public async Task<bool> ConfirmEmail(string emailToken)
+        {
+            if (string.IsNullOrWhiteSpace(emailToken))
+            {
+                throw new ArgumentException(ResponseErrors.INVALID_FIELDS);
+            }
+
+            var handler = new JwtSecurityTokenHandler();
+            var jsonToken = handler.ReadToken(emailToken);
+            var tokenS = jsonToken as JwtSecurityToken;
+
+            Guid userId = Guid.Parse(tokenS.Claims.First(claim => claim.Type == ClaimsIdentity.DefaultNameClaimType).Value);
+            string email = tokenS.Claims.First(claim => claim.Type == "Email").Value;
+
+            User user = await _userRepository.GetAsync(userId);
+            if (user.Email != email)
+            {
+                return false;
+            }
+            if(!user.IsConfirmed)
+            {
+                //_userRepository.Update(true);
+            }
+            
+            return true;
         }
 
         public async Task SignOut()
         {
             await _sessionRepository.UpdateAsync(_serviceContext.SessionId, DateTime.UtcNow);
-        }
-
-        private ClaimsIdentity GetIdentity(Session session)
-        {
-            var claims = new List<Claim>
-                {
-                    new Claim(ClaimsIdentity.DefaultNameClaimType, session.Id.ToString(), "Guid"),
-                    new Claim("DateEnd", session.DateEnd.ToString(), "DateTime"),
-                    new Claim(ClaimsIdentity.DefaultRoleClaimType, "user"),
-                };
-            ClaimsIdentity claimsIdentity =
-            new ClaimsIdentity(claims, "Token", ClaimsIdentity.DefaultNameClaimType,
-                ClaimsIdentity.DefaultRoleClaimType);
-            return claimsIdentity;
-        }
-
-        private List<Claim> GetClaimsForEmail(User user)
-        {
-            return new List<Claim>
-            {
-                new Claim(ClaimsIdentity.DefaultNameClaimType, user.Id.ToString(), "Guid"),
-                new Claim("Email", user.Email, "string"),
-                new Claim(ClaimsIdentity.DefaultRoleClaimType, "user")
-            };
         }
 
         public async Task<bool> CheckCodeAsync(string code)
@@ -288,8 +315,10 @@ namespace MessengerAPI.Services
         {
             ConfirmationCode code = await _codeRepository.GetUnsedCodeByUser(_serviceContext.UserId);
             if (code == null)
+            {
                 throw new InvalidOperationException(ResponseErrors.USER_HAS_NOT_CODE);
-            //Изменить существующий код в бд на новый
+            }
+
             string newHashedCode;
             do
             {

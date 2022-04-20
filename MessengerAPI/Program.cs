@@ -71,7 +71,7 @@ builder.Host.ConfigureServices((host, services) =>
     IConfigurationSection section = host.Configuration.GetSection("ConnectionStrings");
     services.Configure<Connections>(section);
     section = host.Configuration.GetSection("Jwt");
-    services.Configure<JWTOptions>(section);
+    services.Configure<JwtOptions>(section);
     section = host.Configuration.GetSection("Email");
     services.Configure<EmailOptions>(section);
 

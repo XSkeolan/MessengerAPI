@@ -12,6 +12,7 @@
         public const string USER_EMAIL_NOT_SET = "You must first add an email to your profile, then confirm it";
         public const string USER_HAS_NOT_CODE = "You have not confirmation code";
         public const string PASSWORD_ALREADY_SET = "This password already set";
+        public const string EMAIL_ALREADY_EXIST = "This email already exist";
         #endregion
 
         #region Chats
@@ -39,12 +40,13 @@
         #endregion
 
         #region Invalid Field
-        public const string PHONENUMBER_INCORRECT = "Phone number has an incorrect format";
+        public const string PHONENUMBER_INCORRECT = "Phonenumber has an incorrect format";
         public const string ALREADY_EXISTS = "Some fields already exists";
         public const string INVALID_PASSWORD = "Password length must be from 10 to 32 chars";
         public const string INVALID_CODE = "Code length must be 6 chars";
         public const string FIELD_LENGTH_IS_LONG = "One or more fields is very long";
         public const string INVALID_FIELDS = "Some fields is invalid";
+        public const string PHONENUMBER_PASSWORD_INCORRECT = "Phonenumber or password are incorrect";
         #endregion
 
         public const string INVALID_INVITE_USER = "One of users can not be invite";

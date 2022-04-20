@@ -4,7 +4,7 @@ namespace MessengerAPI.Interfaces
 {
     public interface IUserService
     {
-        public int TokenExpires { get; }
+        public int SessionExpires { get; }
         public int EmailCodeExpires { get; }
 
         Task SignUp(User user, string password);
@@ -23,5 +23,6 @@ namespace MessengerAPI.Interfaces
         Task<bool> CheckCodeAsync(string code);
         Task SendToEmailAsync(string subject, string content);
         Task UpdateUser();
+        Task<string> CreateEmailToken();
     }
 }

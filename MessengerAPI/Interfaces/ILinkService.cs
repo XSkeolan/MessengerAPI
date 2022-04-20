@@ -3,6 +3,6 @@
     public interface ILinkService
     {
         Task<string> GetChannelLink();
-        Task<string> GetEmailLink();
+        Task<string> GetEmailLink(string emailToken);
     }
 }

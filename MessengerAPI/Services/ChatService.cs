@@ -213,7 +213,7 @@ namespace MessengerAPI.Services
             }
 
             chats = chats.Take(count);
-            //сообщения возвращать из messageService в контроллере
+
             return await Task.WhenAll(chats.Select(async x => await _chatRepository.GetAsync(x)));
         }
 

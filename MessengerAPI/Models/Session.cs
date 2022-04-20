@@ -17,6 +17,6 @@
         /// <summary>
         /// Дата окончания сессии
         /// </summary>
-        public DateTime? DateEnd { get; set; }
+        public DateTime DateEnd { get; set; }
     }
 }

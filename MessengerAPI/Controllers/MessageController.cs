@@ -23,7 +23,6 @@ namespace MessengerAPI.Controllers
         [Authorize]
         public async Task<IActionResult> SendMessage(MessageRequest request)
         {
-            // добавить проверку на совместную пустоту(см сервис)
             if (string.IsNullOrWhiteSpace(request.Message))
             {
                 return BadRequest(ResponseErrors.EMPTY_MESSAGE);
@@ -194,6 +193,42 @@ namespace MessengerAPI.Controllers
             }
 
             return Ok(await _messageService.GetMessageAsync(messageId));
+        }
+
+        [HttpPatch]
+        [Authorize]
+        public async Task<IActionResult> EditMessage(EditMessageRequest request)
+        {
+            try
+            {
+                await _messageService.GetMessageAsync(request.EditableMessageId);
+            }
+            catch(ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+
+            await _messageService.EditMessageAsync(request.EditableMessageId, request.ModifiedText);
+
+            return Ok();
+        }
+
+        [HttpDelete]
+        [Authorize]
+        public async Task<IActionResult> DeleteMessage(Guid messageId)
+        {
+            try
+            {
+                await _messageService.GetMessageAsync(messageId);
+            }
+            catch(ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+
+            await _messageService.DeleteMessageAsync(messageId);
+
+            return Ok();
         }
     }
 }

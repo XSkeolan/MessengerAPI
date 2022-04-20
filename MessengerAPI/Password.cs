@@ -35,7 +35,7 @@ namespace MessengerAPI
             /* Compare the results */
             for (int i = 0; i < 20; i++)
                 if (hashBytes[i + 16] != hash[i])
-                    throw new UnauthorizedAccessException("Unauthorized");
+                    throw new UnauthorizedAccessException(ResponseErrors.PHONENUMBER_PASSWORD_INCORRECT);
         }
     }
 }
