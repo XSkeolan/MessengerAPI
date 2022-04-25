@@ -6,11 +6,15 @@ namespace MessengerAPI.Services
     public class LinkService : ILinkService
     {
         private readonly IUserRepository _userRepository;
+        private readonly ILinkRepository _linkRepository;
+        private readonly IChatRepository _chatRepository;
         private readonly IServiceContext _serviceContext;
 
-        public LinkService(IUserRepository userRepository, IServiceContext serviceContext)
+        public LinkService(IUserRepository userRepository, ILinkRepository linkRepository, IChatRepository chatRepository, IServiceContext serviceContext)
         {
             _userRepository = userRepository;
+            _linkRepository = linkRepository;
+            _chatRepository = chatRepository;
             _serviceContext = serviceContext;
         }
 
@@ -25,8 +29,22 @@ namespace MessengerAPI.Services
             return "api/auth/confirm" + "?e=" + emailToken;
         }
 
-        public async Task<string> GetChannelLink()
+        public async Task<string> GetChannelLink(Guid channelId, bool oneTime)
         {
+            Chat? chat = await _chatRepository.GetAsync(channelId);
+            if(chat == null)
+            {
+                throw new ArgumentException(ResponseErrors.CHAT_NOT_FOUND);
+            }
+
+            Link link = new Link
+            {
+                DateCreate = DateTime.UtcNow,
+                GroupId = channelId,
+                OneTime = oneTime,
+                IsActive = true
+            };
+
             return "";
         }
     }

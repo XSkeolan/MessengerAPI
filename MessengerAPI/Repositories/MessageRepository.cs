@@ -8,7 +8,7 @@ namespace MessengerAPI.Repositories
 {
     public class MessageRepository : BaseRepository<Message>, IMessageRepository
     {
-        public MessageRepository(IOptions<Connections> options) : base(options) { }
+        public MessageRepository(IOptions<Connections> options, IServiceContext serviceContext) : base(options, serviceContext) { }
 
         public override async Task CreateAsync(Message message)
         {

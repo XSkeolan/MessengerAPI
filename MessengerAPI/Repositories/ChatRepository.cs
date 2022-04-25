@@ -8,12 +8,7 @@ namespace MessengerAPI.Repositories
 {
     public class ChatRepository : BaseRepository<Chat>, IChatRepository
     {
-        private readonly IServiceContext _serviceContext;
-
-        public ChatRepository(IOptions<Connections> options, IServiceContext serviceContext) : base(options)
-        {
-            _serviceContext = serviceContext;
-        }
+        public ChatRepository(IOptions<Connections> options, IServiceContext serviceContext) : base(options, serviceContext) { }
 
         public override async Task CreateAsync(Chat chat)
         {
@@ -34,6 +29,14 @@ namespace MessengerAPI.Repositories
 
         public override async Task<Chat?> GetAsync(Guid id)
         {
+            return await ExecuteWithConnectedTable<Chat?, UserGroup>(async (conn, from) =>
+             {
+                 return await conn.QueryFirstOrDefaultAsync<Chat?>("SELECT tempTable.id, name, description, datecreated, photoid, tempTable.isdeleted FROM (" +
+                    "SELECT * FROM groups " +
+                    "WHERE id=@Id AND isdeleted=false" +
+                    ")" + from, new { Id = id});
+             }, "groupid");
+
             return await Execute(async (conn) =>
             {
                 return await conn.QueryFirstOrDefaultAsync<Chat?>("SELECT groups.id, name, description, datecreated, photoid, groups.isdeleted FROM (" +
