@@ -4,6 +4,9 @@ using Npgsql;
 using System.Data;
 using Microsoft.Extensions.Options;
 using MessengerAPI.Options;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Reflection;
+using Dapper;
 
 namespace MessengerAPI.Repositories
 {
@@ -11,6 +14,7 @@ namespace MessengerAPI.Repositories
     {
         protected readonly string _connectionString;
         protected readonly IServiceContext _serviceContext;
+        private string TableName => typeof(TEntity).GetCustomAttribute<TableAttribute>().Name;
 
         public BaseRepository(IOptions<Connections> options, IServiceContext serviceContext)
         {
@@ -23,45 +27,101 @@ namespace MessengerAPI.Repositories
             _connectionString = options.Value.MessengerAPI;
         }
 
-        protected async Task<TResult> Execute<TResult>(Func<IDbConnection, Task<TResult>> func)
+        public async Task CreateAsync(TEntity entity)
+        {
+            await Execute(async (conn) =>
+            {
+                string fieldToInsert = "";
+                string valuesToInsert = "";
+                IEnumerable<PropertyInfo> propertyInfos = typeof(TEntity).GetProperties().Where(x => x.GetCustomAttribute<ColumnAttribute>() != null);
+
+                foreach (var property in propertyInfos)
+                {
+                    fieldToInsert += property.Name.ToLower() + ' ';
+                    valuesToInsert += '@' + property.Name + ' ';
+                }
+
+                return await conn.ExecuteAsync($"INSERT INTO {TableName} ({fieldToInsert}) VALUES({valuesToInsert})", entity);
+            });
+        }
+
+        public async Task DeleteAsync(Guid id)
+        {
+            await Execute(async (conn) =>
+            {
+                return await conn.ExecuteAsync($"UPDATE {TableName} SET isdeleted=true WHERE id=@Id AND isdeleted=false", new { Id = id });
+            });
+        }
+
+        private async Task<TResult> Execute<TResult>(Func<IDbConnection, Task<TResult>> func)
         {
             using var conn = new NpgsqlConnection(_connectionString);
             conn.Open();
             return await func(conn);
         }
 
-        protected async Task<TResult> ExecuteByContext<TResult>(Func<IDbConnection, string, Task<TResult>> func)
+        public async Task<TEntity> GetAsync(Guid id)
         {
-            using var conn = new NpgsqlConnection(_connectionString);
-            conn.Open();
-            string condition = $"WHERE userid={_serviceContext.UserId}";
-            return await func(conn, condition);
+            return await Execute(async (conn) =>
+            {
+                return await conn.QueryFirstOrDefaultAsync<TEntity>($"SELECT * FROM {TableName} WHERE id=@Id", new { Id = id });
+            });
         }
 
-        protected async Task<TResult> ExecuteWithUserGroup<TResult>(Func<IDbConnection, string, Task<TResult>> func, string fieldName) //можно и enum
+        public async Task<IEnumerable<TEntity>> GetByConditions(IDictionary<string, string> conditions)
         {
-            using var conn = new NpgsqlConnection(_connectionString);
-            conn.Open();
-            string from = $"AS tempTable JOIN usergroup ON tempTable.id={fieldName} AND userid='{_serviceContext.UserId}' AND usergroup.isdeleted=false";
-            return await func(conn, from);
+            return await Execute(async (conn) =>
+            {
+                string queryCond = "";
+                foreach (var cond in conditions)
+                {
+                    queryCond += cond.Key + "=" + cond.Value + ' ';
+
+                    if (conditions.Keys.Last() != cond.Key)
+                    {
+                        queryCond += "AND ";
+                    }
+                }
+                Console.WriteLine(queryCond);
+                return await conn.QueryAsync<TEntity>($"SELECT * FROM {TableName} WHERE {queryCond}");
+            });
         }
 
-        protected async Task<TResult> ExecuteWithConnectedTable<TResult, TTable>(Func<IDbConnection, string, Task<TResult>> func, string fieldName) //можно и enum
+        public async Task<IEnumerable<TEntity>> GetByServiceContextAsync(string fieldName)
         {
-            using var conn = new NpgsqlConnection(_connectionString);
-            conn.Open();
-            string from = $"AS tempTable JOIN {typeof(TTable).Name.ToLower()} ON tempTable.id={fieldName} AND userid='{_serviceContext.UserId}' AND {typeof(TTable).Name.ToLower()}.isdeleted=false";
-            return await func(conn, from);
+            return await Execute(async (conn) =>
+            {
+                return await conn.QueryAsync<TEntity>($"SELECT * FROM {TableName} WHERE {fieldName}=@Context", new { Context = _serviceContext.UserId });
+            });
         }
 
-        protected string QueryUpdate(string tabelField, string value, Guid id) //
+        public async Task<IEnumerable<TEntity>> GetWithConnectedTableAsync(IEnumerable<string> selectedFields, Guid id, string connectedTableName, IDictionary<string,string> connectedFields)
         {
-            return $"UPDATE table SET {tabelField}='{value}' WHERE Id='{id}'";
+            string select = "SELECT ";
+            string join = $"JOIN {connectedTableName} ON ";
+
+            foreach (string field in selectedFields)
+            {
+                select += field + ' ';
+            }
+            foreach (var field in connectedFields)
+            {
+                join += field.Key + "=" + field.Value + " AND ";
+            }
+            Console.WriteLine(join);
+
+            return await Execute(async (conn) =>
+            {
+                return await conn.QueryAsync<TEntity>($"{select} FROM (SELECT * FROM {TableName} WHERE id=@Id AND isdeleted=false) AS tempTable {join} {connectedTableName}.isdeleted=false");
+            });
         }
 
-
-        public abstract Task CreateAsync(TEntity entity);
-        public abstract Task DeleteAsync(Guid id);
-        public abstract Task<TEntity?> GetAsync(Guid id);
+        public async Task UpdateAsync(Guid id, string field, string value)
+        {
+            await Execute(async (conn) =>
+            {
+                return await conn.ExecuteAsync($"UPDATE {TableName} SET {field}=@Field WHERE id=@Id AND isdeleted=false", new { Field = value, Id = id });
+            });
+        }
     }
 }
