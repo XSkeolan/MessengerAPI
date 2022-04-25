@@ -107,11 +107,7 @@ namespace MessengerAPI.Services
             User user = await _userRepository.GetAsync(_serviceContext.UserId);
             if (user.Password == hasedPassword)
             {
-<<<<<<< HEAD
                 throw new ArgumentException(ResponseErrors.PASSWORD_ALREADY_SET);
-=======
-                //await _userRepository.UpdateAsync(hasedPassword);
->>>>>>> fideralRule
             }
             //await _userRepository.UpdateAsync(hasedPassword);
         }
@@ -119,8 +115,6 @@ namespace MessengerAPI.Services
         public async Task UpdateStatus(string status)
         {
             //await _userRepository.UpdateAsync(status);
-<<<<<<< HEAD
-=======
         }
 
         public async Task ConfirmEmail()
@@ -130,7 +124,6 @@ namespace MessengerAPI.Services
             {
 
             }
->>>>>>> fideralRule
         }
 
         public async Task SignUp(User user, string password)
@@ -254,7 +247,6 @@ namespace MessengerAPI.Services
             await _sessionRepository.UpdateAsync(_serviceContext.SessionId, DateTime.UtcNow);
         }
 
-<<<<<<< HEAD
         public async Task<bool> CheckCodeAsync(string code)
         {
             ConfirmationCode confirmationCode = await _codeRepository.GetUnsedCodeByUser(_serviceContext.UserId);
@@ -355,11 +347,11 @@ namespace MessengerAPI.Services
                 code += rnd.Next(0, 10).ToString();
 
             return code;
-=======
+        }
+
         public Task<bool> CheckCode(string code)
         {
             throw new NotImplementedException();
->>>>>>> fideralRule
         }
     }
 }
