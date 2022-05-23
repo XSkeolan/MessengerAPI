@@ -9,6 +9,8 @@ using System.Text;
 using MessengerAPI.Middleware;
 using MessengerAPI.Options;
 using MessengerAPI.Contexts;
+using Dapper;
+using MessengerAPI.SqlTypeHandlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,13 +60,16 @@ builder.Services.AddTransient<IMessageService, MessageService>();
 
 builder.Services.AddTransient<IUserService, UserService>();
 builder.Services.AddTransient<ILinkService, LinkService>();
+builder.Services.AddTransient<ILinkRepository, LinkRepository>();
 builder.Services.AddTransient<IConfirmationCodeRepository, ConfirmationCodeRepository>();
 
 builder.Services.AddTransient<IFileRepository, FileRepository>();
 builder.Services.AddTransient<IFileService, FileService>();
+builder.Services.AddTransient<ITokenService, TokenService>();
 
 builder.Services.AddScoped<IServiceContext, ServiceContext>();
 
+SqlMapper.AddTypeHandler(new DateTimeHandler());
 
 builder.Host.ConfigureServices((host, services) =>
 {
@@ -74,6 +79,8 @@ builder.Host.ConfigureServices((host, services) =>
     services.Configure<JwtOptions>(section);
     section = host.Configuration.GetSection("Email");
     services.Configure<EmailOptions>(section);
+    section = host.Configuration.GetSection("Code");
+    services.Configure<CodeOptions>(section);
 
     services.AddScoped<IServiceContext, ServiceContext>();
 

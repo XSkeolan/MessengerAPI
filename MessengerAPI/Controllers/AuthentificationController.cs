@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
 using MessengerAPI.Models;
+using System.Net.Mail;
 
 namespace MessengerAPI.Controllers
 {
@@ -13,30 +14,35 @@ namespace MessengerAPI.Controllers
     {
         private readonly IUserService _userService;
         private readonly ILinkService _linkService;
+        private readonly ITokenService _tokenService;
 
-        public AuthentificationController(IUserService userService, ILinkService linkService)
+        public AuthentificationController(IUserService userService, ILinkService linkService, ITokenService tokenService)
         {
             _userService = userService;
             _linkService = linkService;
+            _tokenService = tokenService;
         }
 
         [HttpGet("user")]
         [Authorize]
         public async Task<IActionResult> GetUser(Guid id)
         {
-            User? user = await _userService.GetUser(id);
-            if (user == null)
+            try
             {
-                return BadRequest(ResponseErrors.USER_NOT_FOUND);
-            }
+                User? user = await _userService.GetUser(id);
 
-            return Ok(new BaseUserResponse
+                return Ok(new BaseUserResponse
+                {
+                    Id = id,
+                    Name = user.Name,
+                    Surname = user.Surname,
+                    Nickname = user.Nickname
+                });
+            }
+            catch (InvalidOperationException ex)
             {
-                Id = id,
-                Name = user.Name,
-                Surname = user.Surname,
-                Nickname = user.Nickname
-            });
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPatch("user")]
@@ -51,7 +57,29 @@ namespace MessengerAPI.Controllers
                 return BadRequest(ResponseErrors.INVALID_FIELDS);
             }
 
-            await _userService.UpdateUser();
+            if (request.Name.Length > 50)
+            {
+                return BadRequest(ResponseErrors.FIELD_LENGTH_IS_LONG);
+            }
+            if (request.Surname.Length > 50)
+            {
+                return BadRequest(ResponseErrors.FIELD_LENGTH_IS_LONG);
+            }
+            if (request.NickName.Length > 20)
+            {
+                return BadRequest(ResponseErrors.FIELD_LENGTH_IS_LONG);
+            }
+
+            try
+            {
+                MailAddress m = new MailAddress(request.Email);
+            }
+            catch (FormatException)
+            {
+                return BadRequest(ResponseErrors.INVALID_FIELDS);
+            }
+
+            await _userService.UpdateUserInfo(request.Name, request.Surname, request.NickName, request.Email);
 
             return Ok();
         }
@@ -93,7 +121,7 @@ namespace MessengerAPI.Controllers
                 return BadRequest(ResponseErrors.INVALID_PASSWORD);
             }
 
-            await _userService.ChangePassword(newPassword);
+            await _userService.ChangePassword(null, newPassword);
 
             return Ok();
         }
@@ -105,9 +133,9 @@ namespace MessengerAPI.Controllers
             string link;
             try
             {
-                string emailToken = await _userService.CreateEmailToken();
+                string emailToken = await _tokenService.CreateEmailToken();
                 link = await _linkService.GetEmailLink(emailToken);
-                await _userService.SendToEmailAsync("Подтверждение почты", "Мы рады, что вы используете наш сервис. Чтобы подтвердить ваш аккаунт, перейдите по ссылке\n" + link);
+                await _userService.SendToEmailAsync((await _userService.GetCurrentUser()).Email,"Подтверждение почты", "Мы рады, что вы используете наш сервис. Чтобы подтвердить ваш аккаунт, перейдите по ссылке\n" + link);
 
                 return Ok();
             }
@@ -145,10 +173,12 @@ namespace MessengerAPI.Controllers
 
             try
             {
+                Session session = await _userService.SignIn(inputUser.Phonenumber, inputUser.Password, Request.Headers.UserAgent);
+
                 return Ok(new SignInResponse
                 {
                     Expiries = _userService.SessionExpires,
-                    Token = await _userService.SignIn(inputUser.Phonenumber, inputUser.Password, Request.Headers.UserAgent)
+                    Token = await _tokenService.CreateSessionToken(session.Id)
                 });
             }
             catch (Exception ex)
@@ -221,7 +251,7 @@ namespace MessengerAPI.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> RecoverPassword(string code, string newPassword)
         {
-            if (!Regex.IsMatch(code, @"^\d{6}$"))
+            if (code.Length < 6)
             {
                 return BadRequest(ResponseErrors.INVALID_CODE);
             }
@@ -230,14 +260,57 @@ namespace MessengerAPI.Controllers
                 return BadRequest(ResponseErrors.INVALID_PASSWORD);
             }
 
-            if (!await _userService.CheckCodeAsync(code))
+            try
             {
-                return BadRequest(ResponseErrors.INVALID_CODE);
+                ConfirmationCode codeInfo = await _userService.TryGetCodeInfoAsync(code);
+                await _userService.ChangePassword(codeInfo.UserId, newPassword);
+            }
+            catch(ArgumentNullException ex)
+            {
+                return BadRequest(ex.Message);
             }
 
-            await _userService.ChangePassword(newPassword);
-
             return Ok();
+        }
+
+        [HttpPost("/api/public/auth/requestCode")]
+        [AllowAnonymous]
+        public async Task<IActionResult> RequestCode([FromBody]string email)
+        {
+            try
+            {
+                MailAddress m = new MailAddress(email);
+                await _userService.SendCodeAsync(email);
+                return Ok();
+            }
+            catch(FormatException)
+            {
+                return BadRequest(ResponseErrors.INVALID_FIELDS);
+            }
+            catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPost("/api/public/auth/resendCode")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResendCode([FromBody] string email)
+        {
+            try
+            {
+                MailAddress m = new MailAddress(email);
+                await _userService.ResendCodeAsync(email);
+                return Ok();
+            }
+            catch (FormatException)
+            {
+                return BadRequest(ResponseErrors.INVALID_FIELDS);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

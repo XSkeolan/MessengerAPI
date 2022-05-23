@@ -13,7 +13,7 @@
         /// <summary>
         /// Фотография чта
         /// </summary>
-        public byte Photo { get; set; }
+        public Guid? Photo { get; set; }
         /// <summary>
         /// Последнее сообщение в чате
         /// </summary>

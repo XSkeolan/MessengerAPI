@@ -14,7 +14,7 @@ namespace MessengerAPI.Models
         /// Идентификатор чата
         /// </summary>
         [Column("groupid")]
-        public Guid ChatId { get; set; }
+        public Guid GroupId { get; set; }
         /// <summary>
         /// Идентификатор типа пользователя в чате
         /// </summary>

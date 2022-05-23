@@ -18,8 +18,8 @@ namespace MessengerAPI.Models
         /// <summary>
         /// Отправитель сообщения
         /// </summary>
-        [Column("from")]
-        public Guid From { get; set; }
+        [Column("fromwhom")]
+        public Guid FromWhom { get; set; }
         /// <summary>
         /// Получатель сообщения
         /// </summary>

@@ -27,19 +27,29 @@ namespace MessengerAPI.Repositories
             _connectionString = options.Value.MessengerAPI;
         }
 
-        public async Task CreateAsync(TEntity entity)
+        public virtual IDictionary<string, object> EntityToDictionary(TEntity entity)
+        {
+            var result = new Dictionary<string, object>();
+            var properties = typeof(TEntity).GetProperties();
+
+            for (int i = 0; i < properties.Length; i++)
+            {
+                if (properties[i].GetCustomAttribute<NotMappedAttribute>() == null &&
+                    properties[i].GetCustomAttribute<ColumnAttribute>() != null)
+                {
+                    result.Add(properties[i].GetCustomAttribute<ColumnAttribute>().Name, properties[i].GetValue(entity));
+                }
+            }
+
+            return result;
+        }
+
+        public async Task CreateAsync(IDictionary<string, object> entity)
         {
             await Execute(async (conn) =>
             {
-                string fieldToInsert = "";
-                string valuesToInsert = "";
-                IEnumerable<PropertyInfo> propertyInfos = typeof(TEntity).GetProperties().Where(x => x.GetCustomAttribute<ColumnAttribute>() != null);
-
-                foreach (var property in propertyInfos)
-                {
-                    fieldToInsert += property.Name.ToLower() + ' ';
-                    valuesToInsert += '@' + property.Name + ' ';
-                }
+                string fieldToInsert = string.Join(", ", entity.Keys).ToLower();
+                string valuesToInsert = '@' + string.Join(", @", entity.Keys);
 
                 return await conn.ExecuteAsync($"INSERT INTO {TableName} ({fieldToInsert}) VALUES({valuesToInsert})", entity);
             });
@@ -49,7 +59,11 @@ namespace MessengerAPI.Repositories
         {
             await Execute(async (conn) =>
             {
-                return await conn.ExecuteAsync($"UPDATE {TableName} SET isdeleted=true WHERE id=@Id AND isdeleted=false", new { Id = id });
+                ConditionBuilder conditionBuilder = Builder.Condition;
+                var query = conditionBuilder.AndOperation(
+                    conditionBuilder.EqualOperation("id", id, EqualOperations.Equal), 
+                    conditionBuilder.EqualOperation("isdeleted", false, EqualOperations.Equal)).Build();
+                return await conn.ExecuteAsync($"UPDATE {TableName} SET isdeleted=true WHERE {query.Query}", query.Args);
             });
         }
 
@@ -60,67 +74,45 @@ namespace MessengerAPI.Repositories
             return await func(conn);
         }
 
-        public async Task<TEntity> GetAsync(Guid id)
+        public async Task<TEntity?> GetAsync(Guid id)
         {
             return await Execute(async (conn) =>
             {
-                return await conn.QueryFirstOrDefaultAsync<TEntity>($"SELECT * FROM {TableName} WHERE id=@Id", new { Id = id });
+                ConditionBuilder conditionBuilder = Builder.Condition;
+                var query = conditionBuilder.AndOperation(
+                    conditionBuilder.EqualOperation("id", id, EqualOperations.Equal), 
+                    conditionBuilder.EqualOperation("isdeleted", false, EqualOperations.Equal)).Build();
+                return await conn.QuerySingleOrDefaultAsync<TEntity>($"SELECT * FROM {TableName} WHERE {query.Query}", query.Args);
             });
         }
 
-        public async Task<IEnumerable<TEntity>> GetByConditions(IDictionary<string, string> conditions)
+        public async Task<IEnumerable<TEntity>> GetByConditions(ConditionBuilder conditions)
         {
             return await Execute(async (conn) =>
             {
-                string queryCond = "";
-                foreach (var cond in conditions)
+                var result = conditions.Build();
+                foreach (var item in result.Args.Values)
                 {
-                    queryCond += cond.Key + "=" + cond.Value + ' ';
-
-                    if (conditions.Keys.Last() != cond.Key)
-                    {
-                        queryCond += "AND ";
-                    }
+                    Console.WriteLine(item);
                 }
-                Console.WriteLine(queryCond);
-                return await conn.QueryAsync<TEntity>($"SELECT * FROM {TableName} WHERE {queryCond}");
+                
+                IEnumerable<TEntity> f = await conn.QueryAsync<TEntity>($"SELECT * FROM {TableName} WHERE {result.Query}", result.Args);
+                return f;
             });
         }
 
-        public async Task<IEnumerable<TEntity>> GetByServiceContextAsync(string fieldName)
+        public async Task UpdateAsync(Guid id, string field, object value)
         {
-            return await Execute(async (conn) =>
-            {
-                return await conn.QueryAsync<TEntity>($"SELECT * FROM {TableName} WHERE {fieldName}=@Context", new { Context = _serviceContext.UserId });
-            });
-        }
+            ConditionBuilder builder = Builder.Condition.AndOperation(
+                Builder.Condition.EqualOperation("id", id, EqualOperations.Equal), 
+                Builder.Condition.EqualOperation("isdeleted", false, EqualOperations.Equal));
+            var result = builder.Build();
 
-        public async Task<IEnumerable<TEntity>> GetWithConnectedTableAsync(IEnumerable<string> selectedFields, Guid id, string connectedTableName, IDictionary<string,string> connectedFields)
-        {
-            string select = "SELECT ";
-            string join = $"JOIN {connectedTableName} ON ";
-
-            foreach (string field in selectedFields)
-            {
-                select += field + ' ';
-            }
-            foreach (var field in connectedFields)
-            {
-                join += field.Key + "=" + field.Value + " AND ";
-            }
-            Console.WriteLine(join);
-
-            return await Execute(async (conn) =>
-            {
-                return await conn.QueryAsync<TEntity>($"{select} FROM (SELECT * FROM {TableName} WHERE id=@Id AND isdeleted=false) AS tempTable {join} {connectedTableName}.isdeleted=false");
-            });
-        }
-
-        public async Task UpdateAsync(Guid id, string field, string value)
-        {
             await Execute(async (conn) =>
             {
-                return await conn.ExecuteAsync($"UPDATE {TableName} SET {field}=@Field WHERE id=@Id AND isdeleted=false", new { Field = value, Id = id });
+                string query = $"UPDATE {TableName} SET {field}=@Value WHERE {result.Query}";
+                result.Args.Add("Value", value);
+                return await conn.ExecuteAsync(query, result.Args);
             });
         }
     }

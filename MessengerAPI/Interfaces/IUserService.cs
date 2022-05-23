@@ -8,21 +8,21 @@ namespace MessengerAPI.Interfaces
         public int EmailCodeExpires { get; }
 
         Task SignUp(User user, string password);
-        Task<string> SignIn(string phonenumber, string password, string deviceName);
+        Task<Session> SignIn(string phonenumber, string password, string deviceName);
         Task SignOut();
 
         Task<User> GetUserByPhonenumber(string phoneNumber);
+        Task<User?> GetCurrentUser();
         Task<IEnumerable<User>> SearchUsersGlobal(string nickname);
-        Task ChangePassword(string newPassword);
+        Task ChangePassword(Guid? userid, string password);
         Task<User?> GetUser(Guid id);
         Task DeleteUser(string reason);
         Task UpdateStatus(string status);
         Task<bool> ConfirmEmail(string code);
-        Task SendCodeAsync();
-        Task ResendCodeAsync();
-        Task<bool> CheckCodeAsync(string code);
-        Task SendToEmailAsync(string subject, string content);
-        Task UpdateUser();
-        Task<string> CreateEmailToken();
+        Task SendCodeAsync(string phonenumber);
+        Task ResendCodeAsync(string email);
+        Task<ConfirmationCode> TryGetCodeInfoAsync(string code);
+        Task UpdateUserInfo(string name, string surname, string nickname, string email);
+        Task SendToEmailAsync(string email, string subject, string content);
     }
 }

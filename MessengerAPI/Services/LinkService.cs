@@ -47,5 +47,10 @@ namespace MessengerAPI.Services
 
             return "";
         }
+
+        //public Task<string> GetChannelLink()
+        //{
+        //    return string.Empty;
+        //}
     }
 }

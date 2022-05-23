@@ -13,6 +13,6 @@
         /// <summary>
         /// Измененные вложения
         /// </summary>
-        public IEnumerable<byte[]> ModifiedAttachment { get; set; }
+        public IEnumerable<byte[]>? ModifiedAttachment { get; set; }
     }
 }

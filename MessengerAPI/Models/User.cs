@@ -34,7 +34,7 @@ namespace MessengerAPI.Models
         /// Электронная почта пользователя
         /// </summary>
         [Column("email")]
-        public string? Email { get; set; }
+        public string Email { get; set; }
         /// <summary>
         /// Является ли почта подтвержденной
         /// </summary>

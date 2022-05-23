@@ -5,6 +5,7 @@ namespace MessengerAPI.Models
     [Table("confirmationcode")]
     public class ConfirmationCode : EntityBase
     {
+        private DateTime _startDatetime;
         /// <summary>
         /// Код для подтверждения
         /// </summary>
@@ -18,8 +19,8 @@ namespace MessengerAPI.Models
         /// <summary>
         /// Дата и время окончания действия кода
         /// </summary>
-        [Column("dateend")]
-        public DateTime DateEnd { get; set; }
+        [Column("datestart")]
+        public DateTime DateStart { get => _startDatetime; set => _startDatetime = DateTime.SpecifyKind(value, DateTimeKind.Utc); }
         /// <summary>
         /// Использован ли код
         /// </summary>

@@ -11,7 +11,6 @@ namespace MessengerAPI.Interfaces
         Task<IEnumerable<Message>> FindMessagesAsync(Guid chatId, string subtext);
         Task<IEnumerable<Message>> GetHistoryAsync(Guid chatId, DateTime? dateStart, DateTime? dateEnd);
         Task<Message> GetMessageAsync(Guid messageId);
-        Task<bool> MessageIsAvaliableAsync(Guid messageId);
         Task ReadMessageAsync(Guid messageId);
         Task SendMessageAsync(Message message);
         Task<Message?> GetLastMessageAsync(Guid chatId);

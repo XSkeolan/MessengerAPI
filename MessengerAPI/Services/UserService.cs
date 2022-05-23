@@ -65,9 +65,16 @@ namespace MessengerAPI.Services
         {
             var user = await _userRepository.FindByPhonenumberAsync(phoneNumber);
             if (user == null)
+            {
                 throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
+            }
 
             return user;
+        }
+
+        public async Task<User?> GetCurrentUser()
+        {
+            return await _userRepository.GetAsync(_serviceContext.UserId);
         }
 
         public async Task<IEnumerable<User>> SearchUsersGlobal(string nickname)
@@ -91,9 +98,18 @@ namespace MessengerAPI.Services
             return await _userRepository.GetAsync(id);
         }
 
-        public async Task UpdateUser()
+        public async Task UpdateUserInfo(string name, string surname, string nickname, string email)
         {
+            User? user = await _userRepository.GetAsync(_serviceContext.UserId);
+            await _userRepository.UpdateAsync(_serviceContext.UserId, "name", name);
+            await _userRepository.UpdateAsync(_serviceContext.UserId, "surname", surname);
+            await _userRepository.UpdateAsync(_serviceContext.UserId, "nickname", nickname);
 
+            if(email != user.Email)
+            {
+                await _userRepository.UpdateAsync(_serviceContext.UserId, "email", email);
+                await _userRepository.UpdateAsync(_serviceContext.UserId, "isconfirmed", false);
+            }
         }
 
         public async Task DeleteUser(string reason)
@@ -101,35 +117,43 @@ namespace MessengerAPI.Services
             await _userRepository.DeleteAsync(_serviceContext.UserId, reason);
         }
 
-        public async Task ChangePassword(string password)
+        public async Task ChangePassword(Guid? userid, string password)
         {
+            if (userid.HasValue)
+            {
+                if(await _userRepository.GetAsync(userid.Value) == null)
+                {
+                    throw new ArgumentNullException(ResponseErrors.USER_NOT_FOUND);
+                }
+            }
+            else
+            {
+                userid = _serviceContext.UserId;
+            }
+
+            if(password.Length < 8)
+            {
+                throw new ArgumentException(ResponseErrors.INVALID_FIELDS);
+            }
+
             string hasedPassword = Password.GetHasedPassword(password);
-            User user = await _userRepository.GetAsync(_serviceContext.UserId);
+            User user = await _userRepository.GetAsync(userid.Value);
             if (user.Password == hasedPassword)
             {
                 throw new ArgumentException(ResponseErrors.PASSWORD_ALREADY_SET);
             }
-            //await _userRepository.UpdateAsync(hasedPassword);
+            await _userRepository.UpdateAsync(userid.Value, "password", hasedPassword);
         }
 
         public async Task UpdateStatus(string status)
         {
-            //await _userRepository.UpdateAsync(status);
-        }
-
-        public async Task ConfirmEmail()
-        {
-            User user = await _userRepository.GetAsync(_serviceContext.UserId);
-            if(!user.IsConfirmed)
-            {
-
-            }
+            await _userRepository.UpdateAsync(_serviceContext.UserId, "status", status);
         }
 
         public async Task SignUp(User user, string password)
         {
             if (await _userRepository.FindByPhonenumberAsync(user.Phonenumber) != null ||
-                await _userRepository.FindByNicknameAsync(user.Nickname) != null)
+                (await _userRepository.FindByNicknameAsync(user.Nickname)).Count() != 0)
             {
                 throw new ArgumentException(ResponseErrors.ALREADY_EXISTS);
             }
@@ -139,17 +163,17 @@ namespace MessengerAPI.Services
             }
 
             user.Password = Password.GetHasedPassword(password);
-            await _userRepository.CreateAsync(user);
+            await _userRepository.CreateAsync(_userRepository.EntityToDictionary(user));
         }
 
-        public async Task<string> SignIn(string phonenumber, string password, string deviceName)
+        public async Task<Session> SignIn(string phonenumber, string password, string deviceName)
         {
             User? user = await _userRepository.FindByPhonenumberAsync(phonenumber);
             if (user == null)
             {
                 throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
             }
-            if (await _sessionRepository.GetUnfinishedOnDeviceAsync(deviceName) != null)
+            if (await _sessionRepository.GetUnfinishedOnDeviceAsync(deviceName, DateTime.UtcNow) != null)
             {
                 throw new InvalidOperationException(ResponseErrors.USER_ALREADY_AUTHORIZE);
             }
@@ -163,56 +187,15 @@ namespace MessengerAPI.Services
                 DeviceName = deviceName,
                 DateEnd = DateTime.UtcNow.AddSeconds(_sessionExpires)
             };
-            await _sessionRepository.CreateAsync(session);
 
-            return await CreateSessionToken(session);    
+            await _sessionRepository.CreateAsync(_sessionRepository.EntityToDictionary(session));
+
+            return session;    
         }
 
-        private async Task<string> CreateSessionToken(Session session)
+        public async Task SignOut()
         {
-            List<Claim> claims = new List<Claim>
-            {
-                new Claim(ClaimsIdentity.DefaultNameClaimType, session.Id.ToString(), "Guid"),
-                new Claim("DateEnd", session.DateEnd.ToString(), "DateTime"),
-                new Claim(ClaimsIdentity.DefaultRoleClaimType, "user")
-            };
-
-            return CreateJwtToken(claims, session.DateStart, session.DateEnd);
-
-        }
-
-        public async Task<string> CreateEmailToken()
-        {
-            User? user = await _userRepository.GetAsync(_serviceContext.UserId);
-            if (user == null)
-            {
-                throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
-            }
-            if (string.IsNullOrWhiteSpace(user.Email))
-            {
-                throw new ArgumentException(ResponseErrors.USER_EMAIL_NOT_SET);
-            }
-
-            List<Claim> claims = new List<Claim>
-            {
-                new Claim(ClaimsIdentity.DefaultNameClaimType, user.Id.ToString(), "Guid"),
-                new Claim("Email", user.Email)
-            };
-
-            return CreateJwtToken(claims, DateTime.UtcNow, DateTime.UtcNow.AddSeconds(_emailLinkExpires));
-        }
-
-        private string CreateJwtToken(IEnumerable<Claim> claims, DateTime notBefore, DateTime expires)
-        {
-            var jwt = new JwtSecurityToken(
-                    issuer: _issuer,
-                    audience: _audience,
-                    notBefore: notBefore,
-                    claims: claims,
-                    expires: expires,
-                    signingCredentials: new SigningCredentials(new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_key)), SecurityAlgorithms.HmacSha256));
-
-            return new JwtSecurityTokenHandler().WriteToken(jwt);
+            await _sessionRepository.UpdateAsync(_serviceContext.SessionId, "dateend", DateTime.UtcNow);
         }
 
         public async Task<bool> ConfirmEmail(string emailToken)
@@ -236,47 +219,39 @@ namespace MessengerAPI.Services
             }
             if(!user.IsConfirmed)
             {
-                //_userRepository.Update(true);
+                await _userRepository.UpdateAsync(userId, "isconfirmed", true);
             }
             
             return true;
         }
 
-        public async Task SignOut()
+        public async Task<ConfirmationCode> TryGetCodeInfoAsync(string code)
         {
-            await _sessionRepository.UpdateAsync(_serviceContext.SessionId, DateTime.UtcNow);
+            IEnumerable<ConfirmationCode> confirmationCodes = await _codeRepository.GetUnusedValidCode();
+            if (confirmationCodes.Count() == 0)
+            {
+                throw new ArgumentNullException(ResponseErrors.INVALID_CODE);
+            }
+
+            foreach (ConfirmationCode codeHash in confirmationCodes)
+            {
+                try
+                {
+                    Password.VerifyHashedPassword(codeHash.Code, code);
+                    await _codeRepository.UpdateAsync(codeHash.Id, "isused", true);
+                    
+                    return codeHash;
+                }
+                catch (UnauthorizedAccessException) { }
+            }
+
+            throw new ArgumentNullException(ResponseErrors.INVALID_CODE);
         }
 
-        public async Task<bool> CheckCodeAsync(string code)
+        public async Task SendToEmailAsync(string email, string subject, string content)
         {
-            ConfirmationCode confirmationCode = await _codeRepository.GetUnsedCodeByUser(_serviceContext.UserId);
-            if (confirmationCode == null)
-            {
-                return false;
-            }
-
-            try
-            {
-                Password.VerifyHashedPassword(confirmationCode.Code, code);
-                await _codeRepository.UpdateAsync(confirmationCode.Id, true);
-                return true;
-            }
-            catch(Exception)
-            {
-                return false;
-            }
-        }
-
-        public async Task SendToEmailAsync(string subject, string content)
-        {
-            User user = await _userRepository.GetAsync(_serviceContext.UserId);
-            if(string.IsNullOrWhiteSpace(user.Email))
-            {
-                throw new InvalidOperationException(ResponseErrors.USER_EMAIL_NOT_SET);
-            }
-
             MailAddress from = new MailAddress(_email, _name);
-            MailAddress to = new MailAddress(user.Email);
+            MailAddress to = new MailAddress(email);
 
             MailMessage m = new MailMessage(from, to)
             {
@@ -293,49 +268,64 @@ namespace MessengerAPI.Services
             await smtp.SendMailAsync(m);
         }
 
-        public async Task SendCodeAsync()
+        public async Task SendCodeAsync(string email)
         {
-            User user = await _userRepository.GetAsync(_serviceContext.UserId);
-            if (!user.IsConfirmed)
+            User? user = await _userRepository.FindByConfirmedEmailAsync(email);
+            if(user == null)
             {
-                throw new InvalidOperationException(ResponseErrors.USER_HAS_UNCONFIRMED_EMAIL);
+                throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
             }
 
-            if (await _codeRepository.GetUnsedCodeByUser(user.Id) == null)
+            if (await _codeRepository.GetUnsedCodeByUser(user.Id) != null)
             {
                 throw new InvalidOperationException(ResponseErrors.USER_ALREADY_HAS_CODE);
             }
 
             string hashedCode;
+            string generatedCode;
             do
             {
-                hashedCode = Password.GetHasedPassword(GenerateCode());
+                generatedCode = GenerateCode();
+                hashedCode = Password.GetHasedPassword(generatedCode);
             }
             while (await _codeRepository.UnUsedCodeExists(hashedCode));
 
-            await _codeRepository.CreateAsync(new ConfirmationCode
+            ConfirmationCode code = new ConfirmationCode
             {
                 Code = hashedCode,
-                UserId = user.Id
-            });
+                UserId = user.Id,
+                DateStart = DateTime.UtcNow                
+            };
+
+            await _codeRepository.CreateAsync(_codeRepository.EntityToDictionary(code));
+            await SendToEmailAsync(user.Email, "Код восстановления", generatedCode);
         }
 
-        public async Task ResendCodeAsync()
+        public async Task ResendCodeAsync(string email)
         {
-            ConfirmationCode code = await _codeRepository.GetUnsedCodeByUser(_serviceContext.UserId);
+            User? user = await _userRepository.FindByConfirmedEmailAsync(email);
+            if (user == null)
+            {
+                throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
+            }
+
+            ConfirmationCode code = await _codeRepository.GetUnsedCodeByUser(user.Id);
             if (code == null)
             {
                 throw new InvalidOperationException(ResponseErrors.USER_HAS_NOT_CODE);
-            }
+            } 
 
             string newHashedCode;
+            string generatedCode;
             do
             {
-                newHashedCode = Password.GetHasedPassword(GenerateCode());
+                generatedCode = GenerateCode();
+                newHashedCode = Password.GetHasedPassword(generatedCode);
             }
             while (await _codeRepository.UnUsedCodeExists(newHashedCode));
 
-            await _codeRepository.UpdateAsync(code.Id, newHashedCode);
+            await _codeRepository.UpdateAsync(code.Id, "code", newHashedCode);
+            await SendToEmailAsync(user.Email, "Код восстановления", generatedCode);
         }
 
         private string GenerateCode()
@@ -344,14 +334,11 @@ namespace MessengerAPI.Services
             Random rnd = new Random();
 
             for (int i = 0; i < 6; i++)
+            {
                 code += rnd.Next(0, 10).ToString();
+            }
 
             return code;
-        }
-
-        public Task<bool> CheckCode(string code)
-        {
-            throw new NotImplementedException();
         }
     }
 }

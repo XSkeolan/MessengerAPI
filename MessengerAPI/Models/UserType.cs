@@ -2,6 +2,7 @@
 
 namespace MessengerAPI.Models
 {
+    [Table("usertypes")]
     public class UserType : EntityBase
     {
         /// <summary>

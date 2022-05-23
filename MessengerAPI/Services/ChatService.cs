@@ -25,7 +25,7 @@ namespace MessengerAPI.Services
         public async Task CreateChatAsync(Chat chat)
         {
             chat.CreatorId = _serviceContext.UserId;
-            await _chatRepository.CreateAsync(chat);
+            await _chatRepository.CreateAsync(_chatRepository.EntityToDictionary(chat));
         }
 
         private async Task<bool> CurrentUserHaveRights(Guid chatId, string right, Guid? userId=null)
@@ -75,12 +75,12 @@ namespace MessengerAPI.Services
             UserType userType = await _userTypesRepository.GetDefaultType();
             UserGroup userGroup = new UserGroup
             {
-                ChatId = chatId,
+                GroupId = chatId,
                 UserId = userId,
                 UserTypeId = userType.Id,
             };
 
-            await _userChatsRepository.CreateAsync(userGroup);
+            await _userChatsRepository.CreateAsync(_userChatsRepository.EntityToDictionary(userGroup));
 
             return userGroup;
         }
@@ -120,7 +120,8 @@ namespace MessengerAPI.Services
             {
                 throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
             }
-            await _userChatsRepository.UpdateAsync(userGroup.Id, newRole.Id);
+
+            await _userChatsRepository.UpdateAsync(userGroup.Id, "usertypeid", newRole.Id);
 
             return;
         }
@@ -164,6 +165,8 @@ namespace MessengerAPI.Services
             {
                 throw new ArgumentException(ResponseErrors.CHAT_NOT_FOUND);
             }
+
+            chat.CountUser = (await _userChatsRepository.GetChatUsers(chatId)).Count();
             return chat;
         }
 
@@ -176,7 +179,7 @@ namespace MessengerAPI.Services
                 throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
             }
 
-            await _chatRepository.UpdateAsync(chatId, name, (await _chatRepository.GetAsync(chatId)).Description);
+            await _chatRepository.UpdateAsync(chatId, "name", name);
         }
 
         public async Task EditDescriptionAsync(Guid chatId, string description)
@@ -188,7 +191,7 @@ namespace MessengerAPI.Services
                 throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
             }
 
-            await _chatRepository.UpdateAsync(chatId, (await _chatRepository.GetAsync(chatId)).Name, description);
+            await _chatRepository.UpdateAsync(chatId, "description", description);
         }
 
         public async Task DeleteChatAsync(Guid chatId)
@@ -200,20 +203,29 @@ namespace MessengerAPI.Services
                 throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
             }
 
+            IEnumerable<Guid> chatUsers = await _userChatsRepository.GetChatUsers(chatId);
+            foreach (Guid userId in chatUsers)
+            {
+                UserGroup? userGroup = await _userChatsRepository.GetByChatAndUserAsync(chatId, userId);
+                await _userChatsRepository.DeleteAsync(userGroup.Id);
+            }
+
             await _chatRepository.DeleteAsync(chatId);
         }
 
         public async Task<IEnumerable<Chat>> GetDialogsAsync(Guid? offset_id, int count)
         {
             IEnumerable<Guid> chats = await _userChatsRepository.GetUserChatsAsync(_serviceContext.UserId);
-
             if (offset_id.HasValue)
             {
                 chats = chats.SkipWhile(x => x != offset_id).Skip(1);
             }
 
             chats = chats.Take(count);
-
+            if(!chats.Any())
+            {
+                throw new ArgumentNullException(ResponseErrors.USER_LIST_CHATS_IS_EMPTY);
+            }
             return await Task.WhenAll(chats.Select(async x => await _chatRepository.GetAsync(x)));
         }
 
@@ -250,7 +262,7 @@ namespace MessengerAPI.Services
                 throw new ArgumentException(ResponseErrors.FILE_NOT_FOUND);
             }
 
-            await _chatRepository.UpdateAsync(chatId, fileId);
+            await _chatRepository.UpdateAsync(chatId, "photoid", fileId);
         }
 
         private async Task<byte[]> GetPhoto(Guid chatId)

@@ -13,6 +13,7 @@ namespace MessengerAPI.Services
     {
         private readonly ISessionRepository _sessionRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IServiceContext _serviceContext;
 
         private readonly string _issuer;
         private readonly string _audience;
@@ -20,7 +21,7 @@ namespace MessengerAPI.Services
         private readonly int _sessionExpires;
         private readonly int _emailLinkExpires;
 
-        public TokenService(IOptions<JwtOptions> options, ISessionRepository sessionRepository, IUserRepository userRepository) 
+        public TokenService(IOptions<JwtOptions> options, ISessionRepository sessionRepository, IUserRepository userRepository, IServiceContext serviceContext) 
         {
             _issuer = options.Value.Issuer;
             _audience = options.Value.Audience;
@@ -30,6 +31,7 @@ namespace MessengerAPI.Services
 
             _sessionRepository = sessionRepository;
             _userRepository = userRepository;
+            _serviceContext = serviceContext;
         }
 
         public async Task<string> CreateSessionToken(Guid sessionId)
@@ -43,17 +45,15 @@ namespace MessengerAPI.Services
             List<Claim> claims = new List<Claim>
             {
                 new Claim(ClaimsIdentity.DefaultNameClaimType, session.Id.ToString(), "Guid"),
-                new Claim("DateEnd", session.DateEnd.ToString(), "DateTime"),
                 new Claim(ClaimsIdentity.DefaultRoleClaimType, "user")
             };
 
-            return CreateJwtToken(claims, session.DateStart, session.DateEnd);
-            
+            return CreateJwtToken(claims, session.DateStart.AddSeconds(_sessionExpires));
         }
 
-        public async Task<string> CreateEmailToken(Guid userid)
+        public async Task<string> CreateEmailToken()
         {
-            User? user = await _userRepository.GetAsync(userid);
+            User? user = await _userRepository.GetAsync(_serviceContext.UserId);
             if(user == null)
             {
                 throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
@@ -69,15 +69,14 @@ namespace MessengerAPI.Services
                 new Claim("Email", user.Email)
             };
 
-            return CreateJwtToken(claims, DateTime.UtcNow, DateTime.UtcNow.AddSeconds(_emailLinkExpires));
+            return CreateJwtToken(claims, DateTime.UtcNow.AddSeconds(_emailLinkExpires));
         }
 
-        private string CreateJwtToken(IEnumerable<Claim> claims, DateTime notBefore, DateTime expires)
+        private string CreateJwtToken(IEnumerable<Claim> claims, DateTime expires)
         {
             var jwt = new JwtSecurityToken(
                     issuer: _issuer,
                     audience: _audience,
-                    notBefore: notBefore,
                     claims: claims,
                     expires: expires,
                     signingCredentials: new SigningCredentials(new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_key)), SecurityAlgorithms.HmacSha256));

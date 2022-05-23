@@ -29,5 +29,6 @@ namespace MessengerAPI.Models
         /// Идентификатор пользователя-создателя
         /// </summary>
         public Guid CreatorId { get; set; }
+        public int CountUser { get;  set; }
     }
 }

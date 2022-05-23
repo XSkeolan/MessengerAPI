@@ -13,6 +13,6 @@
         /// <summary>
         /// Файлы приложенные к сообщению
         /// </summary>
-        public IEnumerable<byte[]>? Attachment { get; set; }
+        public IFormFile Attachment { get; set; }
     }
 }

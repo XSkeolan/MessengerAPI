@@ -37,20 +37,20 @@ namespace MessengerAPI.Middleware
                 var tokenS = jsonToken as JwtSecurityToken;
 
                 Guid sessionId = Guid.Parse(tokenS.Claims.First(claim => claim.Type == ClaimsIdentity.DefaultNameClaimType).Value);
-                DateTime dateEnd = DateTime.Parse(tokenS.Claims.First(claim => claim.Type == "DateEnd").Value);
-
-                if (dateEnd < DateTime.UtcNow)
-                {
-                    context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
-                    await context.Response.WriteAsync(ResponseErrors.TOKEN_EXPIRED);
-                    return;
-                }
 
                 Session session = await _sessionRepository.GetAsync(sessionId);
+
                 if (session == null)
                 {
                     context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                     await context.Response.WriteAsync(ResponseErrors.SESSION_NOT_FOUND);
+                    return;
+                }
+                DateTime local = DateTime.UtcNow.ToLocalTime();
+                if (session.DateEnd < local)
+                {
+                    context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+                    await context.Response.WriteAsync(ResponseErrors.TOKEN_EXPIRED);
                     return;
                 }
 

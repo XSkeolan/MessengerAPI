@@ -58,7 +58,7 @@ namespace MessengerAPI.Controllers
             {
                 await _chatService.InviteUserAsync(request.ChatId, request.UserId);
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
@@ -94,7 +94,8 @@ namespace MessengerAPI.Controllers
                     ChatId = chat.Id,
                     Description = chat.Description,
                     Name = chat.Name,
-                    Photo = chat.PhotoId
+                    Photo = chat.PhotoId,
+                    CountUsers = chat.CountUser
                 };
 
                 return Ok(chatResponse);
@@ -109,7 +110,14 @@ namespace MessengerAPI.Controllers
         [Authorize]
         public async Task<IActionResult> EditName(Guid chatId, string name)
         {
-            await _chatService.EditNameAsync(chatId, name);
+            try
+            {
+                await _chatService.EditNameAsync(chatId, name);
+            }
+            catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
 
             return Ok();
         }
@@ -118,15 +126,15 @@ namespace MessengerAPI.Controllers
         [Authorize]
         public async Task<IActionResult> EditDescription(Guid chatId, string newDescription)
         {
-            await _chatService.EditDescriptionAsync(chatId, newDescription);
+            try
+            {
+                await _chatService.EditDescriptionAsync(chatId, newDescription);
+            }
+            catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
 
-            return Ok();
-        }
-
-        [HttpPost("editAdmin")]
-        [Authorize]
-        public async Task<IActionResult> EditAdmin(Guid chatId, Guid userId)
-        {
             return Ok();
         }
 

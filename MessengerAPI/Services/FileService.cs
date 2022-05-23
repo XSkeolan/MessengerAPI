@@ -23,11 +23,11 @@ namespace MessengerAPI.Services
 
             Models.File file = new Models.File
             {
-                Server = "http://ure.ru",
+                Server = "http://localhost:5037/",
                 Path = filename
             };
 
-            await _fileRepository.CreateAsync(file);
+            await _fileRepository.CreateAsync(_fileRepository.EntityToDictionary(file));
             return file.Id;
         }
     }

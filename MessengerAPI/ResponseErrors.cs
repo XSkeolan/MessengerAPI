@@ -1,4 +1,6 @@
-﻿namespace MessengerAPI
+﻿using System.Runtime.Serialization;
+
+namespace MessengerAPI
 {
     public static class ResponseErrors
     {
@@ -24,6 +26,7 @@
         public const string CHAT_PRIVATE = "This chat is private";
         public const string CHAT_ROLE_NOT_FOUND = "Chat role not found";
         public const string USER_ALREADY_IN_CHAT = "One or more users from the invited list are already in the chat";
+        public const string USER_LIST_CHATS_IS_EMPTY = "User has zero chat";
         #endregion
 
         #region Messages
@@ -31,6 +34,7 @@
         public const string EMPTY_MESSAGE = "Message is empty";
         public const string MESSAGE_ALREADY_SENT = "Message already sent in destination";
         public const string DESTINATION_NOT_FOUND = "Destination of message not found";
+        public const string USER_NOT_SENDER = "You is not sender of this message";
         #endregion
 
         #region Files

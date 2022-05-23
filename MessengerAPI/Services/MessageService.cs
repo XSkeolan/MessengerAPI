@@ -1,5 +1,7 @@
 ﻿using MessengerAPI.Interfaces;
 using MessengerAPI.Models;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Reflection;
 
 namespace MessengerAPI.Services
 {
@@ -51,6 +53,11 @@ namespace MessengerAPI.Services
             {
                 throw new ArgumentException(ResponseErrors.DESTINATION_NOT_FOUND);
             }
+
+            if(await _userChatRepository.GetByChatAndUserAsync(message.Destination, _serviceContext.UserId) == null)
+            {
+                throw new ArgumentException(ResponseErrors.USER_NOT_PARTICIPANT);
+            }
             
             // true - нет вложений
             if (string.IsNullOrWhiteSpace(message.Text) && true && !message.OriginalMessageId.HasValue)
@@ -58,21 +65,28 @@ namespace MessengerAPI.Services
                 throw new InvalidOperationException(ResponseErrors.EMPTY_MESSAGE);
             }
 
-            message.From = _serviceContext.UserId;
-            await _messageRepository.CreateAsync(message);
+            message.FromWhom = _serviceContext.UserId;
+            await _messageRepository.CreateAsync(_messageRepository.EntityToDictionary(message));
         }
 
-        public async Task<Message?> GetMessageAsync(Guid messageId)
+        public async Task<Message> GetMessageAsync(Guid messageId)
         {
-            return await _messageRepository.GetAsync(messageId);
+            Message? message = await _messageRepository.GetAsync(messageId);
+            if (message == null)
+            {
+                throw new ArgumentException(ResponseErrors.MESSAGE_NOT_FOUND);
+            }
+
+            UserGroup? userGroup = await _userChatRepository.GetByChatAndUserAsync(message.Destination, _serviceContext.UserId);
+            return userGroup != null ? message : throw new ArgumentException(ResponseErrors.USER_NOT_PARTICIPANT);
         }
 
-        //Может ли удалять отправитель?
         public async Task DeleteMessageAsync(Guid messagesId)
         {
-            Message? message = await _messageRepository.GetAsync(messagesId);
-            UserType userType = await _userTypeRepository.GetUserTypeInChatAsync(_serviceContext.UserId, message.Destination);
-            if (!userType.Permissions.Contains(Permissions.DELETE_MESSAGE))
+            Message? message = await GetMessageAsync(messagesId);
+            UserGroup? userGroup = await _userChatRepository.GetByChatAndUserAsync(message.Destination, _serviceContext.UserId);
+            UserType? userType = await _userTypeRepository.GetAsync(userGroup.UserTypeId);
+            if (!userType.Permissions.Contains(Permissions.DELETE_MESSAGE) && message.FromWhom != _serviceContext.UserId)
             {
                 throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
             }
@@ -80,21 +94,9 @@ namespace MessengerAPI.Services
             await _messageRepository.DeleteAsync(messagesId);
         }
 
-        public async Task<bool> MessageIsAvaliableAsync(Guid messageId)
-        {
-            Message? message = await _messageRepository.GetAsync(messageId);
-            if(message == null)
-            {
-                return false;
-            }
-
-            UserGroup? userGroup = await _userChatRepository.GetByChatAndUserAsync(message.Destination, _serviceContext.UserId);
-            return userGroup != null;
-        }
-
         public async Task ChangePinStatusAsync(Guid messageId, bool status)
         {
-            Message? message = await _messageRepository.GetAsync(messageId);
+            Message? message = await GetMessageAsync(messageId);
             UserGroup? userGroup = await _userChatRepository.GetByChatAndUserAsync(message.Destination, _serviceContext.UserId);
             UserType? userType = await _userTypeRepository.GetAsync(userGroup.UserTypeId);
             if (!userType.Permissions.Contains(Permissions.PIN_MESSAGE))
@@ -102,7 +104,7 @@ namespace MessengerAPI.Services
                 throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
             }
 
-            await _messageRepository.UpdateAsync(messageId, status);
+            await _messageRepository.UpdateAsync(messageId, typeof(Message).GetProperty("IsPinned").GetCustomAttribute<ColumnAttribute>().Name, status);
         }
 
         public async Task<IEnumerable<Message>> GetHistoryAsync(Guid chatId, DateTime? dateStart, DateTime? dateEnd)
@@ -148,19 +150,23 @@ namespace MessengerAPI.Services
 
         public async Task EditMessageAsync(Guid messageId, string newText)
         {
-            // федеральные правила
-            await _messageRepository.UpdateAsync(messageId, newText);
+            Message message = await GetMessageAsync(messageId);
+            if(message.FromWhom != _serviceContext.UserId)
+            {
+                throw new InvalidOperationException(ResponseErrors.USER_NOT_SENDER);
+            }
+
+            await _messageRepository.UpdateAsync(messageId, "text", newText);
         }
 
         public async Task ReadMessageAsync(Guid messageId)
         {
-            // федеральные правила
-            await _messageRepository.UpdateAsync(messageId);
+            await _messageRepository.UpdateAsync(messageId, "isread", true);
         }
 
         public async Task<IEnumerable<Message>> FindMessagesAsync(Guid chatId, string subtext)
         {
-            // федеральные правила
+            // федеративные правила
             return (await _messageRepository.GetMessagesByDestination(chatId)).Where(x=> x.Text.Contains(subtext));
         }
 

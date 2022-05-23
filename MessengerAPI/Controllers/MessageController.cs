@@ -21,7 +21,7 @@ namespace MessengerAPI.Controllers
 
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> SendMessage(MessageRequest request)
+        public async Task<IActionResult> SendMessage(MessageRequest request, IFormFileCollection formFiles)
         {
             if (string.IsNullOrWhiteSpace(request.Message))
             {
@@ -29,14 +29,16 @@ namespace MessengerAPI.Controllers
             }
             if (request.Attachment != null)
             {
-                if(request.Attachment.Count()>5)
-                {
-                    return BadRequest(ResponseErrors.COUNT_FILES_VERY_LONG);
-                }
-                if (request.Attachment.All(file => file.Length == 0))
-                {
-                    return BadRequest(ResponseErrors.FILE_IS_EMPTY);
-                }
+                //if(request.Attachment.Count()>5)
+                //{
+                //    return BadRequest(ResponseErrors.COUNT_FILES_VERY_LONG);
+                //}
+                //if (request.Attachment.All(file => file.Length == 0))
+                //{
+                //    return BadRequest(ResponseErrors.FILE_IS_EMPTY);
+                //}
+
+
             }
 
             try
@@ -76,7 +78,7 @@ namespace MessengerAPI.Controllers
                 MessageId = message.Id,
                 Message = message.Text,
                 Date = message.DateSend,
-                FromId = message.From,
+                FromId = message.FromWhom,
                 IsPinned = message.IsPinned,
             }));
         }
@@ -91,7 +93,16 @@ namespace MessengerAPI.Controllers
                 return BadRequest(ResponseErrors.INVALID_FIELDS);
             }
 
-            IEnumerable<Chat> dialogs = await _chatService.GetDialogsAsync(offsetId, count);
+            IEnumerable<Chat> dialogs;
+            try
+            {
+                dialogs = await _chatService.GetDialogsAsync(offsetId, count);
+            }
+            catch(ArgumentNullException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            
             IEnumerable<Message?> lastMessages = await Task.WhenAll(dialogs.Select(async (dialog) =>
             {
                 return await _messageService.GetLastMessageAsync(dialog.Id);
@@ -103,14 +114,28 @@ namespace MessengerAPI.Controllers
             {
                 while (dialogEnumearator.MoveNext() && messageEnmerator.MoveNext())
                 {
-                    responses.Add(new DialogInfoResponse
+                    if (messageEnmerator.Current != null)
                     {
-                        Id = dialogEnumearator.Current.Id,
-                        Name = dialogEnumearator.Current.Name,
-                        //Photo = dialogEnumearator.Current.PhotoId,
-                        LastMessageText = messageEnmerator.Current.Text,
-                        LastMessageDateSend = messageEnmerator.Current.DateSend
-                    });
+                        responses.Add(new DialogInfoResponse
+                        {
+                            Id = dialogEnumearator.Current.Id,
+                            Name = dialogEnumearator.Current.Name,
+                            Photo = dialogEnumearator.Current.PhotoId,
+                            LastMessageText = messageEnmerator.Current.Text,
+                            LastMessageDateSend = messageEnmerator.Current.DateSend
+                        });
+                    }
+                    else
+                    {
+                        responses.Add(new DialogInfoResponse
+                        {
+                            Id = dialogEnumearator.Current.Id,
+                            Name = dialogEnumearator.Current.Name,
+                            Photo = dialogEnumearator.Current.PhotoId,
+                            LastMessageText = "",
+                            LastMessageDateSend = null
+                        });
+                    }
                 }
             }
 
@@ -122,18 +147,14 @@ namespace MessengerAPI.Controllers
         [Route("forwardMessage")]
         public async Task<IActionResult> ForwardMessage(ForwardMessageRequest request)
         {
-            if(!await _messageService.MessageIsAvaliableAsync(request.MessageId))
-            {
-                return BadRequest(ResponseErrors.MESSAGE_NOT_FOUND);
-            }
-
             try
             {
                 await _chatService.GetChatAsync(request.ChatId);
+                await _messageService.GetMessageAsync(request.MessageId);
             }
-            catch
+            catch(ArgumentException ex)
             {
-                return BadRequest(ResponseErrors.CHAT_NOT_FOUND);
+                return BadRequest(ex.Message);
             }
 
             Message message = new Message
@@ -160,9 +181,13 @@ namespace MessengerAPI.Controllers
         [Route("replyOnMessage")]
         public async Task<IActionResult> ReplyOnMessage(ReplyMessageRequest request)
         {
-            if(!await _messageService.MessageIsAvaliableAsync(request.ReplyMessageId))
+            try
             {
-                return BadRequest(ResponseErrors.MESSAGE_NOT_FOUND);
+                await _messageService.GetMessageAsync(request.ReplyMessageId);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
             }
 
             Message message = new Message
@@ -175,7 +200,7 @@ namespace MessengerAPI.Controllers
             {
                 await _messageService.SendMessageAsync(message);
             }
-            catch (Exception ex)
+            catch(Exception ex)
             {
                 return BadRequest(ex.Message);
             }
@@ -187,12 +212,14 @@ namespace MessengerAPI.Controllers
         [Authorize]
         public async Task<IActionResult> GetMessage(Guid messageId)
         {
-            if(!await _messageService.MessageIsAvaliableAsync(messageId))
+            try
             {
-                return BadRequest(ResponseErrors.MESSAGE_NOT_FOUND);
+                return Ok(await _messageService.GetMessageAsync(messageId));
             }
-
-            return Ok(await _messageService.GetMessageAsync(messageId));
+            catch(ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPatch]
@@ -201,14 +228,12 @@ namespace MessengerAPI.Controllers
         {
             try
             {
-                await _messageService.GetMessageAsync(request.EditableMessageId);
+                await _messageService.EditMessageAsync(request.EditableMessageId, request.ModifiedText);
             }
-            catch(ArgumentException ex)
+            catch(InvalidOperationException ex)
             {
                 return BadRequest(ex.Message);
             }
-
-            await _messageService.EditMessageAsync(request.EditableMessageId, request.ModifiedText);
 
             return Ok();
         }
@@ -226,8 +251,15 @@ namespace MessengerAPI.Controllers
                 return BadRequest(ex.Message);
             }
 
-            await _messageService.DeleteMessageAsync(messageId);
-
+            try
+            {
+                await _messageService.DeleteMessageAsync(messageId);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            
             return Ok();
         }
     }
