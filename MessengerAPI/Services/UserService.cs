@@ -173,7 +173,7 @@ namespace MessengerAPI.Services
             {
                 throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
             }
-            if (await _sessionRepository.GetUnfinishedOnDeviceAsync(deviceName, DateTime.UtcNow) != null)
+            if (await _sessionRepository.GetUnfinishedOnDeviceAsync(deviceName, DateTime.UtcNow.ToLocalTime()) != null)
             {
                 throw new InvalidOperationException(ResponseErrors.USER_ALREADY_AUTHORIZE);
             }

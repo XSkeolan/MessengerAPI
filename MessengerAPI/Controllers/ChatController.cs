@@ -31,7 +31,6 @@ namespace MessengerAPI.Controllers
             Chat chat = new Chat
             {
                 Name = request.Name,
-                Description = request.Description,
                 PhotoId = null,
                 DateCreated = DateTime.UtcNow
             };
@@ -43,7 +42,6 @@ namespace MessengerAPI.Controllers
             ChatResponse response = new ChatResponse
             {
                 ChatId = chat.Id,
-                Description = chat.Description,
                 Name = chat.Name,
             };
 
@@ -92,7 +90,6 @@ namespace MessengerAPI.Controllers
                 ChatResponse chatResponse = new ChatResponse
                 {
                     ChatId = chat.Id,
-                    Description = chat.Description,
                     Name = chat.Name,
                     Photo = chat.PhotoId,
                     CountUsers = chat.CountUser
@@ -113,22 +110,6 @@ namespace MessengerAPI.Controllers
             try
             {
                 await _chatService.EditNameAsync(chatId, name);
-            }
-            catch(Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-
-            return Ok();
-        }
-
-        [HttpPost("editDescription")]
-        [Authorize]
-        public async Task<IActionResult> EditDescription(Guid chatId, string newDescription)
-        {
-            try
-            {
-                await _chatService.EditDescriptionAsync(chatId, newDescription);
             }
             catch(Exception ex)
             {

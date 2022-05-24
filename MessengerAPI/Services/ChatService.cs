@@ -182,18 +182,6 @@ namespace MessengerAPI.Services
             await _chatRepository.UpdateAsync(chatId, "name", name);
         }
 
-        public async Task EditDescriptionAsync(Guid chatId, string description)
-        {
-            await GetChatAsync(chatId);
-
-            if (!await CurrentUserHaveRights(chatId, Permissions.EDIT_CHAT_INFO))
-            {
-                throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
-            }
-
-            await _chatRepository.UpdateAsync(chatId, "description", description);
-        }
-
         public async Task DeleteChatAsync(Guid chatId)
         {
             await GetChatAsync(chatId);

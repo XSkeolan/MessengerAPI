@@ -1,17 +1,18 @@
-﻿using MessengerAPI.Options;
-using Microsoft.Extensions.Options;
-
-namespace MessengerAPI.DTOs
+﻿namespace MessengerAPI.DTOs
 {
     public class ChatRequest
     {
         /// <summary>
-        /// Название чата
+        /// Название
         /// </summary>
         public string Name { get; set; }
         /// <summary>
-        /// Описание чата
+        /// Описание
         /// </summary>
         public string? Description { get; set; }
+        /// <summary>
+        /// Идентификатор фотографии
+        /// </summary>
+        public Guid? PhotoId { get; set; }
     }
 }

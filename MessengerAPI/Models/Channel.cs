@@ -2,14 +2,19 @@
 
 namespace MessengerAPI.Models
 {
-    [Table("groups")]
-    public class Chat : EntityBase
+    [Table("channels")]
+    public class Channel : EntityBase
     {
         /// <summary>
         /// Название чата
         /// </summary>
         [Column("name")]
         public string Name { get; set; }
+        /// <summary>
+        /// Описание чата
+        /// </summary>
+        [Column("description")]
+        public string? Description { get; set; }
         /// <summary>
         /// Идентификатор фотографии
         /// </summary>
@@ -23,7 +28,8 @@ namespace MessengerAPI.Models
         /// <summary>
         /// Идентификатор пользователя-создателя
         /// </summary>
+        [Column("creatorid")]
         public Guid CreatorId { get; set; }
-        public int CountUser { get;  set; }
+        public int CountUser { get; set; }
     }
 }

@@ -13,6 +13,7 @@ namespace MessengerAPI.Services
     {
         private readonly ISessionRepository _sessionRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IChannelLinkRepository _channelLinkRepository;
         private readonly IServiceContext _serviceContext;
 
         private readonly string _issuer;
@@ -21,7 +22,11 @@ namespace MessengerAPI.Services
         private readonly int _sessionExpires;
         private readonly int _emailLinkExpires;
 
-        public TokenService(IOptions<JwtOptions> options, ISessionRepository sessionRepository, IUserRepository userRepository, IServiceContext serviceContext) 
+        public TokenService(IOptions<JwtOptions> options, 
+            ISessionRepository sessionRepository, 
+            IUserRepository userRepository, 
+            IChannelLinkRepository channelLinkRepository, 
+            IServiceContext serviceContext) 
         {
             _issuer = options.Value.Issuer;
             _audience = options.Value.Audience;
@@ -31,6 +36,7 @@ namespace MessengerAPI.Services
 
             _sessionRepository = sessionRepository;
             _userRepository = userRepository;
+            _channelLinkRepository = channelLinkRepository;
             _serviceContext = serviceContext;
         }
 
@@ -70,6 +76,23 @@ namespace MessengerAPI.Services
             };
 
             return CreateJwtToken(claims, DateTime.UtcNow.AddSeconds(_emailLinkExpires));
+        }
+
+        public async Task<string> CreateInvitationToken(Guid channelLinkId)
+        {
+            ChannelLink? channelLink = await _channelLinkRepository.GetAsync(channelLinkId);
+            if(channelLink == null)
+            {
+                throw new ArgumentNullException(ResponseErrors.CHANNEL_LINK_NOT_FOUND);
+            }
+
+            List<Claim> claims = new List<Claim>
+            {
+                new Claim(ClaimsIdentity.DefaultNameClaimType, channelLinkId.ToString(), "Guid"),
+                new Claim("DateEnd", channelLink.DateEnd.ToString(), "DateTime")
+            };
+
+            return CreateJwtToken(claims, channelLink.DateEnd);
         }
 
         private string CreateJwtToken(IEnumerable<Claim> claims, DateTime expires)

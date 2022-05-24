@@ -14,7 +14,6 @@ namespace MessengerAPI.Interfaces
         Task<IEnumerable<Chat>> GetDialogsAsync(Guid? offset_id, int count);
 
         Task EditNameAsync(Guid chatId, string name);
-        Task EditDescriptionAsync(Guid chatId, string name);
         Task EditPhotoAsync(Guid chatId, Guid fileId);
 
         Task<IEnumerable<UserType>> GetRolesAsync();

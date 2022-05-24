@@ -69,6 +69,11 @@ builder.Services.AddTransient<ITokenService, TokenService>();
 
 builder.Services.AddScoped<IServiceContext, ServiceContext>();
 
+builder.Services.AddTransient<IChannelRepository, ChannelRepository>();
+builder.Services.AddTransient<IChannelService, ChannelService>();
+builder.Services.AddTransient<IChannelLinkRepository, ChannelLinkRepository>();
+builder.Services.AddTransient<IUserChannelRepository, UserChannelRepository>();
+
 SqlMapper.AddTypeHandler(new DateTimeHandler());
 
 builder.Host.ConfigureServices((host, services) =>

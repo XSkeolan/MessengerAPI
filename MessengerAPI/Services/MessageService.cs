@@ -8,21 +8,18 @@ namespace MessengerAPI.Services
     public class MessageService : IMessageService
     {
         private readonly IMessageRepository _messageRepository;
-        private readonly IUserRepository _userRepository;
         private readonly IChatRepository _chatRepository;
         private readonly IUserChatRepository _userChatRepository;
         private readonly IUserTypeRepository _userTypeRepository;
         private readonly IServiceContext _serviceContext;
 
         public MessageService(IMessageRepository messages, 
-            IUserRepository userRepository, 
             IChatRepository chatRepository, 
             IUserChatRepository userChatRepository,
             IUserTypeRepository userTypeRepository,
             IServiceContext serviceContext)
         {
             _messageRepository = messages;
-            _userRepository = userRepository;
             _chatRepository = chatRepository;
             _userChatRepository = userChatRepository;
             _userTypeRepository = userTypeRepository;
@@ -166,7 +163,6 @@ namespace MessengerAPI.Services
 
         public async Task<IEnumerable<Message>> FindMessagesAsync(Guid chatId, string subtext)
         {
-            // федеративные правила
             return (await _messageRepository.GetMessagesByDestination(chatId)).Where(x=> x.Text.Contains(subtext));
         }
 

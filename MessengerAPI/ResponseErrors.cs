@@ -10,7 +10,7 @@ namespace MessengerAPI
         public const string USER_ALREADY_HAS_CODE = "You already have a code that is not used. if you want to poison the code again, use the method resendCode";
         public const string USER_HAS_UNCONFIRMED_EMAIL = "You have an unconfirmed email. Confirm your email first for sending code";
         public const string USER_ALREADY_AUTHORIZE = "You already authorize in this device. Use signOut method and after that use this method again";
-        public const string USER_NOT_PARTICIPANT = "This user is not a member of this chat";
+        public const string USER_NOT_PARTICIPANT = "This user is not a member";
         public const string USER_EMAIL_NOT_SET = "You must first add an email to your profile, then confirm it";
         public const string USER_HAS_NOT_CODE = "You have not confirmation code";
         public const string PASSWORD_ALREADY_SET = "This password already set";
@@ -27,6 +27,14 @@ namespace MessengerAPI
         public const string CHAT_ROLE_NOT_FOUND = "Chat role not found";
         public const string USER_ALREADY_IN_CHAT = "One or more users from the invited list are already in the chat";
         public const string USER_LIST_CHATS_IS_EMPTY = "User has zero chat";
+        #endregion
+
+        #region Channels
+        public const string CHANNEL_NOT_FOUND = "Channel not found";
+        public const string CHANNEL_LINK_NOT_FOUND = "Channel link not found";
+        public const string USER_ALREADY_IN_CHANNEL = "User already in the chat";
+        public const string CHANNEL_LINK_INVALID = "This link is invalid or expired";
+        public const string CHANNEL_LINK_ALREADY_USED = "This link already used";
         #endregion
 
         #region Messages

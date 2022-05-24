@@ -12,7 +12,7 @@ namespace MessengerAPI.Repositories
         public async Task<Session?> GetUnfinishedOnDeviceAsync(string device, DateTime endTimeSession)
         {
             ConditionBuilder cond = Builder.Condition;
-            cond = cond.AndOperation(cond.EqualOperation("devicename", device, EqualOperations.Equal), cond.EqualOperation("Dateend", endTimeSession, EqualOperations.Equal));
+            cond = cond.AndOperation(cond.EqualOperation("devicename", device, EqualOperations.Equal), cond.EqualOperation("dateend", endTimeSession, EqualOperations.MoreEqual));
 
             return (await GetByConditions(cond)).FirstOrDefault();
         }
