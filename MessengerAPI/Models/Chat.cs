@@ -23,7 +23,13 @@ namespace MessengerAPI.Models
         /// <summary>
         /// Идентификатор пользователя-создателя
         /// </summary>
+        [Column("creatorid")]
         public Guid CreatorId { get; set; }
+        /// <summary>
+        /// Роль пользователя по умолчанию
+        /// </summary>
+        [Column("defaulusertypeid")]
+        public Guid DefaultUserTypeId { get; set; }
         public int CountUser { get;  set; }
     }
 }

@@ -29,7 +29,7 @@ namespace MessengerAPI.Repositories
             return (await GetByConditions(cond)).Select(x => x.GroupId);
         }
 
-        public async Task<IEnumerable<Guid>> GetChatUsers(Guid chatId)
+        public async Task<IEnumerable<Guid>> GetChatUsersAsync(Guid chatId)
         {
             ConditionBuilder cond = Builder.Condition;
             cond = cond.AndOperation(cond.EqualOperation("groupid", chatId, EqualOperations.Equal), cond.EqualOperation("isdeleted", false, EqualOperations.Equal));

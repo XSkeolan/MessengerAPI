@@ -5,9 +5,9 @@ using Microsoft.Extensions.Options;
 
 namespace MessengerAPI.Repositories
 {
-    public class ChannelLinkRepository : BaseRepository<ChannelLink>, IChannelLinkRepository
+    public class ChatLinkRepository : BaseRepository<ChannelLink>, IChannelLinkRepository
     {
-        public ChannelLinkRepository(IOptions<Connections> options) : base(options)
+        public ChatLinkRepository(IOptions<Connections> options) : base(options)
         {
         }
     }

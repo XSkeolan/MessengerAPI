@@ -17,12 +17,12 @@ namespace MessengerAPI.Repositories
             return (await GetByConditions(cond)).FirstOrDefault();
         }
 
-        public async Task<UserType> GetDefaultType()
+        public async Task<IEnumerable<UserType>> GetDefaultTypes()
         {
             ConditionBuilder cond = Builder.Condition;
             cond = cond.AndOperation(cond.EqualOperation("isdefault", true, EqualOperations.Equal), cond.EqualOperation("isdeleted", false, EqualOperations.Equal));
 
-            return (await GetByConditions(cond)).First();
+            return (await GetByConditions(cond));
         }
 
         public async Task<IEnumerable<UserType>> GetAll()
@@ -31,6 +31,11 @@ namespace MessengerAPI.Repositories
             cond = cond.EqualOperation("isdeleted", false, EqualOperations.Equal);
 
             return await GetByConditions(cond);
+        }
+
+        public async Task<UserType> GetByMaxPriorityAsync()
+        {
+            return (await GetAll()).OrderByDescending(x => x.PriorityLevel).First();
         }
     }
 }

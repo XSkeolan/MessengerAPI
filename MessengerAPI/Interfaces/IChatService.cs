@@ -20,5 +20,6 @@ namespace MessengerAPI.Interfaces
         Task SetRoleAsync(Guid chatId, Guid userId, Guid roleId);
 
         Task<IEnumerable<User>> SearchUsersAsync(Guid chatId, string nickname);
+        Task<UserType> GetAdminRoleAsync();
     }
 }

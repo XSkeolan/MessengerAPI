@@ -32,12 +32,13 @@ namespace MessengerAPI.Controllers
             {
                 Name = request.Name,
                 PhotoId = null,
-                DateCreated = DateTime.UtcNow
+                DateCreated = DateTime.UtcNow,
+                DefaultUserTypeId = request.DefaultUserTypeId
             };
-
             await _chatService.CreateChatAsync(chat);
+            
             await _chatService.InviteUserAsync(chat.Id, chat.CreatorId);
-            await _chatService.SetRoleAsync(chat.Id, chat.CreatorId, Guid.Parse("bb6dc5a0-9546-438b-ac19-00a748b2be82"));
+            await _chatService.SetRoleAsync(chat.Id, chat.CreatorId, (await _chatService.GetAdminRoleAsync()).Id);
 
             ChatResponse response = new ChatResponse
             {

@@ -14,5 +14,9 @@
         /// Идентификатор фотографии
         /// </summary>
         public Guid? PhotoId { get; set; }
+        /// <summary>
+        /// Идентификатор типа пользователя по умолчанию при инвайте
+        /// </summary>
+        public Guid DefaultUserTypeId { get; set; }
     }
 }
