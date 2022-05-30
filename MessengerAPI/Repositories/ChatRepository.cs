@@ -9,7 +9,7 @@ namespace MessengerAPI.Repositories
     {
         public ChatRepository(IOptions<Connections> options, IServiceContext serviceContext) : base(options, serviceContext) { }
 
-        public async Task<IEnumerable<Chat>> GetChatByNameAsync(string name)
+        public async Task<IEnumerable<Chat>> GetChatsByNameAsync(string name)
         {
             ConditionBuilder cond = Builder.Condition;
             cond.AndOperation(cond.LikeOperation("name", $"%{name}%"), cond.EqualOperation("isdeleted", false, EqualOperations.Equal));

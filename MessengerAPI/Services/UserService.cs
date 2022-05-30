@@ -32,8 +32,8 @@ namespace MessengerAPI.Services
         private readonly int _port;
 
         public UserService(IOptions<EmailOptions> emailOptions,
-            IOptions<JwtOptions> options, 
-            IUserRepository userRepository, 
+            IOptions<JwtOptions> options,
+            IUserRepository userRepository,
             IUserChatRepository userChatRepository,
             ISessionRepository sessionRepository,
             IConfirmationCodeRepository codeRepository,
@@ -105,7 +105,7 @@ namespace MessengerAPI.Services
             await _userRepository.UpdateAsync(_serviceContext.UserId, "surname", surname);
             await _userRepository.UpdateAsync(_serviceContext.UserId, "nickname", nickname);
 
-            if(email != user.Email)
+            if (email != user.Email)
             {
                 await _userRepository.UpdateAsync(_serviceContext.UserId, "email", email);
                 await _userRepository.UpdateAsync(_serviceContext.UserId, "isconfirmed", false);
@@ -121,7 +121,7 @@ namespace MessengerAPI.Services
         {
             if (userid.HasValue)
             {
-                if(await _userRepository.GetAsync(userid.Value) == null)
+                if (await _userRepository.GetAsync(userid.Value) == null)
                 {
                     throw new ArgumentNullException(ResponseErrors.USER_NOT_FOUND);
                 }
@@ -131,7 +131,7 @@ namespace MessengerAPI.Services
                 userid = _serviceContext.UserId;
             }
 
-            if(password.Length < 8)
+            if (password.Length < 8)
             {
                 throw new ArgumentException(ResponseErrors.INVALID_FIELDS);
             }
@@ -157,7 +157,7 @@ namespace MessengerAPI.Services
             {
                 throw new ArgumentException(ResponseErrors.ALREADY_EXISTS);
             }
-            if(!string.IsNullOrWhiteSpace(user.Email) && await _userRepository.FindByConfirmedEmailAsync(user.Email) != null)
+            if (!string.IsNullOrWhiteSpace(user.Email) && await _userRepository.FindByConfirmedEmailAsync(user.Email) != null)
             {
                 throw new ArgumentException(ResponseErrors.EMAIL_ALREADY_EXIST);
             }
@@ -190,7 +190,7 @@ namespace MessengerAPI.Services
 
             await _sessionRepository.CreateAsync(_sessionRepository.EntityToDictionary(session));
 
-            return session;    
+            return session;
         }
 
         public async Task SignOut()
@@ -217,11 +217,11 @@ namespace MessengerAPI.Services
             {
                 return false;
             }
-            if(!user.IsConfirmed)
+            if (!user.IsConfirmed)
             {
                 await _userRepository.UpdateAsync(userId, "isconfirmed", true);
             }
-            
+
             return true;
         }
 
@@ -239,7 +239,7 @@ namespace MessengerAPI.Services
                 {
                     Password.VerifyHashedPassword(codeHash.Code, code);
                     await _codeRepository.UpdateAsync(codeHash.Id, "isused", true);
-                    
+
                     return codeHash;
                 }
                 catch (UnauthorizedAccessException) { }
@@ -271,7 +271,7 @@ namespace MessengerAPI.Services
         public async Task SendCodeAsync(string email)
         {
             User? user = await _userRepository.FindByConfirmedEmailAsync(email);
-            if(user == null)
+            if (user == null)
             {
                 throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
             }
@@ -294,7 +294,7 @@ namespace MessengerAPI.Services
             {
                 Code = hashedCode,
                 UserId = user.Id,
-                DateStart = DateTime.UtcNow                
+                DateStart = DateTime.UtcNow
             };
 
             await _codeRepository.CreateAsync(_codeRepository.EntityToDictionary(code));
@@ -313,7 +313,7 @@ namespace MessengerAPI.Services
             if (code == null)
             {
                 throw new InvalidOperationException(ResponseErrors.USER_HAS_NOT_CODE);
-            } 
+            }
 
             string newHashedCode;
             string generatedCode;

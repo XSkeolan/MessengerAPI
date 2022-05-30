@@ -10,6 +10,11 @@ namespace MessengerAPI.Models
         /// </summary>
         [Column("name")]
         public string Name { get; set; }
+        // <summary>
+        /// Описание чата
+        /// </summary>
+        [Column("description")]
+        public string Description { get; set; }
         /// <summary>
         /// Идентификатор фотографии
         /// </summary>
@@ -28,8 +33,8 @@ namespace MessengerAPI.Models
         /// <summary>
         /// Роль пользователя по умолчанию
         /// </summary>
-        [Column("defaulusertypeid")]
+        [Column("defaultusertypeid")]
         public Guid DefaultUserTypeId { get; set; }
-        public int CountUser { get;  set; }
+        public int CountUser { get; set; } = 1;
     }
 }

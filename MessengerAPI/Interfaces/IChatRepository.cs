@@ -4,6 +4,6 @@ namespace MessengerAPI.Interfaces
 {
     public interface IChatRepository : IRepository<Chat>
     {
-        Task<IEnumerable<Chat>> GetChatByNameAsync(string name);
+        Task<IEnumerable<Chat>> GetChatsByNameAsync(string name);
     }
 }

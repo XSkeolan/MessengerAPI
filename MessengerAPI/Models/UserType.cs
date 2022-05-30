@@ -14,7 +14,7 @@ namespace MessengerAPI.Models
         /// Права данного типа
         /// </summary>
         [Column("permissions")]
-        public string Permissions { get; set; }
+        public string? Permissions { get; set; }
         /// <summary>
         /// Уровень приоритета типа над другими
         /// </summary>

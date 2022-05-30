@@ -2,7 +2,7 @@
 
 namespace MessengerAPI.Interfaces
 {
-    public interface IChannelLinkRepository : IRepository<ChannelLink>
+    public interface IChannelLinkRepository : IRepository<ChatLink>
     {
     }
 }

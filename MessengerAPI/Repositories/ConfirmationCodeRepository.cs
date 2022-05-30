@@ -8,7 +8,7 @@ namespace MessengerAPI.Repositories
     public class ConfirmationCodeRepository : BaseRepository<ConfirmationCode>, IConfirmationCodeRepository
     {
         private readonly TimeSpan _validTime;
-        public ConfirmationCodeRepository(IOptions<Connections> options, IOptions<CodeOptions> codeOptions) : base(options) 
+        public ConfirmationCodeRepository(IOptions<Connections> options, IOptions<CodeOptions> codeOptions) : base(options)
         {
             _validTime = TimeSpan.FromSeconds(codeOptions.Value.ValidCodeTime);
         }
@@ -18,7 +18,7 @@ namespace MessengerAPI.Repositories
             ConditionBuilder cond = Builder.Condition;
             cond = cond.AndOperation(cond.AndOperation(
                 cond.EqualOperation("code", codeHash, EqualOperations.Equal),
-                cond.EqualOperation("isused", false, EqualOperations.Equal)), 
+                cond.EqualOperation("isused", false, EqualOperations.Equal)),
                 cond.EqualOperation("isdeleted", false, EqualOperations.Equal));
 
             return (await GetByConditions(cond)).Any();

@@ -135,11 +135,11 @@ namespace MessengerAPI.Controllers
             {
                 string emailToken = await _tokenService.CreateEmailToken();
                 link = await _linkService.GetEmailLink(emailToken);
-                await _userService.SendToEmailAsync((await _userService.GetCurrentUser()).Email,"Подтверждение почты", "Мы рады, что вы используете наш сервис. Чтобы подтвердить ваш аккаунт, перейдите по ссылке\n" + link);
+                await _userService.SendToEmailAsync((await _userService.GetCurrentUser()).Email, "Подтверждение почты", "Мы рады, что вы используете наш сервис. Чтобы подтвердить ваш аккаунт, перейдите по ссылке\n" + link);
 
                 return Ok();
             }
-            catch(InvalidOperationException ex)
+            catch (InvalidOperationException ex)
             {
                 return BadRequest(ex.Message);
             }
@@ -149,11 +149,11 @@ namespace MessengerAPI.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> ConfirmEmail(string emailToken)
         {
-            if(string.IsNullOrWhiteSpace(emailToken))
+            if (string.IsNullOrWhiteSpace(emailToken))
             {
                 return BadRequest(ResponseErrors.INVALID_FIELDS);
             }
-            
+
             return Ok(await _userService.ConfirmEmail(emailToken));
         }
 
@@ -265,7 +265,7 @@ namespace MessengerAPI.Controllers
                 ConfirmationCode codeInfo = await _userService.TryGetCodeInfoAsync(code);
                 await _userService.ChangePassword(codeInfo.UserId, newPassword);
             }
-            catch(ArgumentNullException ex)
+            catch (ArgumentNullException ex)
             {
                 return BadRequest(ex.Message);
             }
@@ -275,7 +275,7 @@ namespace MessengerAPI.Controllers
 
         [HttpPost("/api/public/auth/requestCode")]
         [AllowAnonymous]
-        public async Task<IActionResult> RequestCode([FromBody]string email)
+        public async Task<IActionResult> RequestCode([FromBody] string email)
         {
             try
             {
@@ -283,11 +283,11 @@ namespace MessengerAPI.Controllers
                 await _userService.SendCodeAsync(email);
                 return Ok();
             }
-            catch(FormatException)
+            catch (FormatException)
             {
                 return BadRequest(ResponseErrors.INVALID_FIELDS);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }

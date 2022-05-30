@@ -69,7 +69,6 @@ builder.Services.AddTransient<ITokenService, TokenService>();
 
 builder.Services.AddScoped<IServiceContext, ServiceContext>();
 
-builder.Services.AddTransient<IChannelService, ChannelService>();
 builder.Services.AddTransient<IChannelLinkRepository, ChatLinkRepository>();
 
 SqlMapper.AddTypeHandler(new DateTimeHandler());

@@ -14,8 +14,8 @@ namespace MessengerAPI.Repositories
             ConditionBuilder cond = Builder.Condition;
             cond = cond.AndOperation(
                 cond.AndOperation(
-                    Builder.Condition.EqualOperation("userid", userId, EqualOperations.Equal), 
-                    Builder.Condition.EqualOperation("groupid", chatId, EqualOperations.Equal)), 
+                    Builder.Condition.EqualOperation("userid", userId, EqualOperations.Equal),
+                    Builder.Condition.EqualOperation("groupid", chatId, EqualOperations.Equal)),
                 cond.EqualOperation("isdeleted", false, EqualOperations.Equal));
 
             return (await GetByConditions(cond)).FirstOrDefault();

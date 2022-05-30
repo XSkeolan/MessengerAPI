@@ -80,7 +80,7 @@ namespace MessengerAPI.Services
 
         public async Task<string> CreateInvitationToken(Guid channelLinkId)
         {
-            ChannelLink? channelLink = await _channelLinkRepository.GetAsync(channelLinkId);
+            ChatLink? channelLink = await _channelLinkRepository.GetAsync(channelLinkId);
             if(channelLink == null)
             {
                 throw new ArgumentNullException(ResponseErrors.CHANNEL_LINK_NOT_FOUND);

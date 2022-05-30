@@ -10,5 +10,7 @@
         public const string INVITE_USER = "INVITE_USER";
         public const string SEND_MESSAGE = "SEND_MESSAGE";
         public const string PIN_MESSAGE = "PIN_MESSAGE";
+        public const string INVITE_LINK = "INVITE_LINK";
+        public const string CHANGE_CREATOR = "CHANGE_CREATOR";
     }
 }

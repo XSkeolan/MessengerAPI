@@ -61,7 +61,7 @@ namespace MessengerAPI.Repositories
             {
                 ConditionBuilder conditionBuilder = Builder.Condition;
                 var query = conditionBuilder.AndOperation(
-                    conditionBuilder.EqualOperation("id", id, EqualOperations.Equal), 
+                    conditionBuilder.EqualOperation("id", id, EqualOperations.Equal),
                     conditionBuilder.EqualOperation("isdeleted", false, EqualOperations.Equal)).Build();
                 return await conn.ExecuteAsync($"UPDATE {TableName} SET isdeleted=true WHERE {query.Query}", query.Args);
             });
@@ -80,7 +80,7 @@ namespace MessengerAPI.Repositories
             {
                 ConditionBuilder conditionBuilder = Builder.Condition;
                 var query = conditionBuilder.AndOperation(
-                    conditionBuilder.EqualOperation("id", id, EqualOperations.Equal), 
+                    conditionBuilder.EqualOperation("id", id, EqualOperations.Equal),
                     conditionBuilder.EqualOperation("isdeleted", false, EqualOperations.Equal)).Build();
                 return await conn.QuerySingleOrDefaultAsync<TEntity>($"SELECT * FROM {TableName} WHERE {query.Query}", query.Args);
             });
@@ -95,7 +95,7 @@ namespace MessengerAPI.Repositories
                 {
                     Console.WriteLine(item);
                 }
-                
+
                 IEnumerable<TEntity> f = await conn.QueryAsync<TEntity>($"SELECT * FROM {TableName} WHERE {result.Query}", result.Args);
                 return f;
             });
@@ -104,7 +104,7 @@ namespace MessengerAPI.Repositories
         public async Task UpdateAsync(Guid id, string field, object value)
         {
             ConditionBuilder builder = Builder.Condition.AndOperation(
-                Builder.Condition.EqualOperation("id", id, EqualOperations.Equal), 
+                Builder.Condition.EqualOperation("id", id, EqualOperations.Equal),
                 Builder.Condition.EqualOperation("isdeleted", false, EqualOperations.Equal));
             var result = builder.Build();
 

@@ -2,14 +2,14 @@
 
 namespace MessengerAPI.Models
 {
-    [Table("channellinks")]
-    public class ChannelLink : EntityBase
+    [Table("grouplinks")]
+    public class ChatLink : EntityBase
     {
         /// <summary>
         /// Идентификатор канала на который ведет ссылка
         /// </summary>
-        [Column("channelid")]
-        public Guid ChannelId { get; set; }
+        [Column("groupid")]
+        public Guid GroupId { get; set; }
         /// <summary>
         /// Является ли ссылка одноразовой
         /// </summary>

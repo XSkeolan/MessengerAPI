@@ -15,10 +15,10 @@ namespace MessengerAPI.Services
         private readonly IFileRepository _fileRepository;
         private readonly IChannelLinkRepository _channelLinkRepository;
 
-        public ChatService(IChatRepository chats, 
-            IUserChatRepository users, 
-            IUserTypeRepository userTypes, 
-            IUserRepository userRepository, 
+        public ChatService(IChatRepository chats,
+            IUserChatRepository users,
+            IUserTypeRepository userTypes,
+            IUserRepository userRepository,
             IFileRepository fileRepository,
             IChannelLinkRepository channelLinkRepository,
             IServiceContext serviceContext)
@@ -36,13 +36,21 @@ namespace MessengerAPI.Services
         {
             chat.CreatorId = _serviceContext.UserId;
             await _chatRepository.CreateAsync(_chatRepository.EntityToDictionary(chat));
-
         }
 
-        private async Task<bool> CurrentUserHaveRights(Guid chatId, string right, Guid? userId=null)
+        private async Task<bool> CurrentUserHaveRights(Guid chatId, string right, Guid? userId = null)
         {
             UserGroup? currentUserGroup = await _userChatRepository.GetByChatAndUserAsync(chatId, _serviceContext.UserId);
+            if (currentUserGroup == null)
+            {
+                throw new InvalidOperationException(ResponseErrors.USER_NOT_PARTICIPANT);
+            }
+
             UserType? currentUserRole = await _userTypesRepository.GetAsync(currentUserGroup.UserTypeId);
+            if (currentUserRole.Permissions == null && (await _userChatRepository.GetChatUsersAsync(chatId)).Count() > 1)
+            {
+                return false;
+            }
 
             if (userId.HasValue)
             {
@@ -57,7 +65,7 @@ namespace MessengerAPI.Services
             }
             else
             {
-                return currentUserRole.Permissions.Contains(right) || (await _userChatRepository.GetChatUsersAsync(chatId)).Count() == 1;
+                return (await _userChatRepository.GetChatUsersAsync(chatId)).Count() == 1 || currentUserRole.Permissions.Contains(right);
             }
         }
 
@@ -66,11 +74,11 @@ namespace MessengerAPI.Services
             Chat chat = await GetChatAsync(chatId);
 
             User? user = await _userRepository.GetAsync(userId);
-            if(user == null)
+            if (user == null)
             {
                 throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
             }
-            
+
             int countUsers = (await _userChatRepository.GetChatUsersAsync(chatId)).Count();
 
             if (countUsers > 0 && !(await CurrentUserHaveRights(chatId, Permissions.INVITE_USER)))
@@ -96,23 +104,24 @@ namespace MessengerAPI.Services
             return userGroup;
         }
 
-        public async Task<UserGroup> JoinAsync(Guid channelId)
+        public async Task<UserGroup> JoinAsync(Guid chatId)
         {
-            Chat chat = await GetChatAsync(channelId);
-            if ((await _userTypesRepository.GetByTypeNameAsync("subsriber")).Id != chat.DefaultUserTypeId)
+            Chat chat = await GetChatAsync(chatId);
+            if ((await _userTypesRepository.GetByTypeNameAsync("subscriber")).Id != chat.DefaultUserTypeId)
             {
                 throw new InvalidOperationException(ResponseErrors.CHAT_PRIVATE);
             }
 
-            if ((await _userChatRepository.GetChatUsersAsync(channelId)).Contains(_serviceContext.UserId))
+            if ((await _userChatRepository.GetChatUsersAsync(chatId)).Contains(_serviceContext.UserId))
             {
                 throw new InvalidOperationException(ResponseErrors.USER_ALREADY_IN_CHANNEL);
             }
 
             UserGroup userChannel = new UserGroup
             {
-                GroupId = channelId,
-                UserId = _serviceContext.UserId
+                GroupId = chatId,
+                UserId = _serviceContext.UserId,
+                UserTypeId = chat.DefaultUserTypeId
             };
 
             await _userChatRepository.CreateAsync(_userChatRepository.EntityToDictionary(userChannel));
@@ -124,13 +133,13 @@ namespace MessengerAPI.Services
         {
             await GetChatAsync(chatId);
 
-            Guid? userChat = (await _userChatRepository.GetChatUsersAsync(chatId)).Where(x => x == _serviceContext.UserId).FirstOrDefault();
-            if (userChat == null)
+            UserGroup? userGroup = await _userChatRepository.GetByChatAndUserAsync(chatId, _serviceContext.UserId);
+            if (userGroup == null)
             {
-                throw new ArgumentNullException(ResponseErrors.USER_NOT_PARTICIPANT);
+                throw new ArgumentException(ResponseErrors.USER_NOT_PARTICIPANT);
             }
 
-            await _userChatRepository.DeleteAsync(userChat.Value);
+            await _userChatRepository.DeleteAsync(userGroup.Id);
         }
 
         public async Task<Chat> JoinByLinkAsync(string token)
@@ -139,6 +148,7 @@ namespace MessengerAPI.Services
             {
                 throw new ArgumentException(ResponseErrors.INVALID_FIELDS);
             }
+
             var handler = new JwtSecurityTokenHandler();
             var jsonToken = handler.ReadToken(token);
             var tokenS = jsonToken as JwtSecurityToken;
@@ -146,7 +156,7 @@ namespace MessengerAPI.Services
             Guid channelLinkId = Guid.Parse(tokenS.Claims.First(claim => claim.Type == ClaimsIdentity.DefaultNameClaimType).Value);
             DateTime dateEnd = DateTime.Parse(tokenS.Claims.First(claim => claim.Type == "DateEnd").Value);
 
-            ChannelLink? channelLink = await _channelLinkRepository.GetAsync(channelLinkId);
+            ChatLink? channelLink = await _channelLinkRepository.GetAsync(channelLinkId);
             if (channelLink == null)
             {
                 throw new ArgumentException(ResponseErrors.CHANNEL_LINK_ALREADY_USED);
@@ -162,7 +172,7 @@ namespace MessengerAPI.Services
                 await _channelLinkRepository.DeleteAsync(channelLinkId);
             }
 
-            return await _chatRepository.GetAsync(channelLink.ChannelId);
+            return await _chatRepository.GetAsync(channelLink.GroupId);
         }
 
         public async Task SetRoleAsync(Guid chatId, Guid userId, Guid roleId)
@@ -185,7 +195,7 @@ namespace MessengerAPI.Services
             UserGroup? currentUser = await _userChatRepository.GetByChatAndUserAsync(chatId, _serviceContext.UserId);
             UserType? currnetUserType = await _userTypesRepository.GetAsync(currentUser.UserTypeId);
 
-            if(currnetUserType.PriorityLevel <= userType.PriorityLevel && (await _userChatRepository.GetUserChatsAsync(chatId)).Any())
+            if (currnetUserType.PriorityLevel <= userType.PriorityLevel && (await _userChatRepository.GetUserChatsAsync(chatId)).Any())
             {
                 throw new InvalidOperationException(ResponseErrors.INVALID_ROLE_FOR_OPENATION);
             }
@@ -196,7 +206,7 @@ namespace MessengerAPI.Services
                 throw new ArgumentException(ResponseErrors.CHAT_ROLE_NOT_FOUND);
             }
 
-            if(!await CurrentUserHaveRights(chatId, Permissions.EDIT_PERMISSION))
+            if (!await CurrentUserHaveRights(chatId, Permissions.EDIT_PERMISSION))
             {
                 throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
             }
@@ -216,7 +226,7 @@ namespace MessengerAPI.Services
             }
 
             UserGroup? kickUserGroup = await _userChatRepository.GetByChatAndUserAsync(chatId, userId);
-            if(kickUserGroup == null)
+            if (kickUserGroup == null)
             {
                 throw new ArgumentException(ResponseErrors.USER_NOT_PARTICIPANT);
             }
@@ -225,7 +235,7 @@ namespace MessengerAPI.Services
             UserGroup? currentUserGroup = await _userChatRepository.GetByChatAndUserAsync(chatId, _serviceContext.UserId);
             UserType? currentUserType = await _userTypesRepository.GetAsync(currentUserGroup.UserTypeId);
 
-            if(currentUserType.PriorityLevel <= kickUserType.PriorityLevel)
+            if (currentUserType.PriorityLevel <= kickUserType.PriorityLevel)
             {
                 throw new InvalidOperationException(ResponseErrors.INVALID_ROLE_FOR_OPENATION);
             }
@@ -241,7 +251,7 @@ namespace MessengerAPI.Services
         public async Task<Chat> GetChatAsync(Guid chatId)
         {
             Chat? chat = await _chatRepository.GetAsync(chatId);
-            if(chat == null)
+            if (chat == null)
             {
                 throw new ArgumentException(ResponseErrors.CHAT_NOT_FOUND);
             }
@@ -250,16 +260,35 @@ namespace MessengerAPI.Services
             return chat;
         }
 
+        public async Task<IEnumerable<Chat>> FindChatByName(string chatName)
+        {
+            IEnumerable<Chat> chats = await _chatRepository.GetChatsByNameAsync(chatName);
+            UserType userType = await _userTypesRepository.GetByTypeNameAsync("subscriber");
+            return chats.Where(chat => chat.DefaultUserTypeId == userType.Id);
+        }
+
         public async Task EditNameAsync(Guid chatId, string name)
         {
             await GetChatAsync(chatId);
 
-            if(!await CurrentUserHaveRights(chatId, Permissions.EDIT_CHAT_INFO))
+            if (!await CurrentUserHaveRights(chatId, Permissions.EDIT_CHAT_INFO))
             {
                 throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
             }
 
             await _chatRepository.UpdateAsync(chatId, "name", name);
+        }
+
+        public async Task EditDescriptionAsync(Guid chatId, string newDescription)
+        {
+            await GetChatAsync(chatId);
+
+            if (!await CurrentUserHaveRights(chatId, Permissions.EDIT_CHAT_INFO))
+            {
+                throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
+            }
+
+            await _chatRepository.UpdateAsync(chatId, "description", newDescription);
         }
 
         public async Task DeleteChatAsync(Guid chatId)
@@ -281,6 +310,68 @@ namespace MessengerAPI.Services
             await _chatRepository.DeleteAsync(chatId);
         }
 
+        public async Task CreateInvitationLinkAsync(ChatLink channelLink)
+        {
+            await GetChatAsync(channelLink.GroupId);
+            if (!await CurrentUserHaveRights(channelLink.GroupId, Permissions.INVITE_LINK))
+            {
+                throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
+            }
+
+            await _channelLinkRepository.CreateAsync(_channelLinkRepository.EntityToDictionary(channelLink));
+        }
+
+        public async Task DeleteInvitationLinkAsync(Guid channelLinkId)
+        {
+            ChatLink? link = await _channelLinkRepository.GetAsync(channelLinkId);
+            if (link == null)
+            {
+                throw new ArgumentException(ResponseErrors.CHANNEL_LINK_NOT_FOUND);
+            }
+
+            if (!await CurrentUserHaveRights(link.GroupId, Permissions.INVITE_LINK))
+            {
+                throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
+            }
+
+            await _channelLinkRepository.DeleteAsync(channelLinkId);
+        }
+
+        public async Task ChangeCreatorAsync(Guid chatlId, Guid userId)
+        {
+            await GetChatAsync(chatlId);
+            if (!await CurrentUserHaveRights(chatlId, Permissions.CHANGE_CREATOR))
+            {
+                throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
+            }
+
+            User? user = await _userRepository.GetAsync(userId);
+
+            if (user == null)
+            {
+                throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
+            }
+            else
+            {
+                if (!(await _userChatRepository.GetChatUsersAsync(chatlId)).Contains(userId))
+                {
+                    throw new ArgumentException(ResponseErrors.USER_NOT_PARTICIPANT);
+                }
+            }
+
+            UserGroup? currentAdmin = await _userChatRepository.GetByChatAndUserAsync(chatlId, _serviceContext.UserId);
+            UserGroup? newAdmin = await _userChatRepository.GetByChatAndUserAsync(chatlId, userId);
+
+            if (newAdmin == null)
+            {
+                throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
+            }
+
+            await _userChatRepository.UpdateAsync(currentAdmin.Id, "usertypeid", (await _userTypesRepository.GetByTypeNameAsync("moderator")).Id);
+            await _chatRepository.UpdateAsync(chatlId, "creatorid", userId);
+            await _userChatRepository.UpdateAsync(newAdmin.Id, "usertypeid", currentAdmin.UserTypeId);
+        }
+
         public async Task<IEnumerable<Chat>> GetDialogsAsync(Guid? offset_id, int count)
         {
             IEnumerable<Guid> chats = await _userChatRepository.GetUserChatsAsync(_serviceContext.UserId);
@@ -290,9 +381,9 @@ namespace MessengerAPI.Services
             }
 
             chats = chats.Take(count);
-            if(!chats.Any())
+            if (!chats.Any())
             {
-                throw new ArgumentNullException(ResponseErrors.USER_LIST_CHATS_IS_EMPTY);
+                throw new ArgumentException(ResponseErrors.USER_LIST_CHATS_IS_EMPTY);
             }
             return await Task.WhenAll(chats.Select(async x => await _chatRepository.GetAsync(x)));
         }
@@ -325,7 +416,7 @@ namespace MessengerAPI.Services
             await GetChatAsync(chatId);
 
             Models.File? file = await _fileRepository.GetAsync(fileId);
-            if(file == null)
+            if (file == null)
             {
                 throw new ArgumentException(ResponseErrors.FILE_NOT_FOUND);
             }
@@ -336,7 +427,7 @@ namespace MessengerAPI.Services
         private async Task<byte[]> GetPhoto(Guid chatId)
         {
             Chat? chat = await _chatRepository.GetAsync(chatId);
-            if(chat.PhotoId.HasValue)
+            if (chat.PhotoId.HasValue)
             {
                 Models.File photo = await _fileRepository.GetAsync(chat.PhotoId.Value);
 
