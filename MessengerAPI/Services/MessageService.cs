@@ -1,5 +1,6 @@
 ﻿using MessengerAPI.Interfaces;
 using MessengerAPI.Models;
+using Microsoft.Extensions.Options;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 
@@ -7,6 +8,7 @@ namespace MessengerAPI.Services
 {
     public class MessageService : IMessageService
     {
+        private readonly string _filesPath;
         private readonly IMessageRepository _messageRepository;
         private readonly IChatRepository _chatRepository;
         private readonly IUserChatRepository _userChatRepository;
@@ -15,7 +17,7 @@ namespace MessengerAPI.Services
         private readonly IMessageFileRepository _messageFileRepository;
         private readonly IServiceContext _serviceContext;
 
-        public MessageService(IMessageRepository messages,
+        public MessageService(IOptions<Options.FileOptions> options, IMessageRepository messages,
             IChatRepository chatRepository,
             IUserChatRepository userChatRepository,
             IUserTypeRepository userTypeRepository,
@@ -23,6 +25,7 @@ namespace MessengerAPI.Services
             IMessageFileRepository messageFileRepository,
             IServiceContext serviceContext)
         {
+            _filesPath = options.Value.StoredFilesPath;
             _messageRepository = messages;
             _chatRepository = chatRepository;
             _userChatRepository = userChatRepository;
@@ -78,7 +81,7 @@ namespace MessengerAPI.Services
                 throw new ArgumentException(ResponseErrors.FILE_IS_EMPTY);
             }
 
-            var filePath = Path.Combine("D:\\Image", Path.GetRandomFileName());
+            var filePath = Path.Combine(_filesPath, Path.GetRandomFileName());
 
             using (var stream = System.IO.File.Create(filePath))
             {

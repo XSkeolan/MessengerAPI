@@ -434,7 +434,9 @@ namespace MessengerAPI.Services
                 throw new ArgumentException(ResponseErrors.FILE_NOT_FOUND);
             }
 
+            Guid currentFileId = file.Id;
             await _chatRepository.UpdateAsync(chatId, "photoid", fileId);
+            await _fileRepository.DeleteAsync(currentFileId);
         }
 
         public async Task<UserType> GetAdminRoleAsync()
