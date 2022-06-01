@@ -13,11 +13,13 @@ namespace MessengerAPI.Controllers
     {
         private readonly IChatService _chatService;
         private readonly ITokenService _tokenService;
+        private readonly IFileService _fileService;
 
-        public ChatController(IChatService chatService, ITokenService tokenService)
+        public ChatController(IChatService chatService, ITokenService tokenService, IFileService fileService)
         {
             _chatService = chatService;
             _tokenService = tokenService;
+            _fileService = fileService;
         }
 
         [HttpPost]
@@ -352,6 +354,18 @@ namespace MessengerAPI.Controllers
             {
                 return BadRequest(ex.Message);
             }
+        }
+
+        [HttpPost("private/uploadChatImage")]
+        [Authorize]
+        public async Task<IActionResult> UploadChatImage(IFormFile imageData)
+        {
+            if (imageData.Length == 0)
+            {
+                return BadRequest(ResponseErrors.INVALID_FIELDS);
+            }
+
+            return Ok(await _fileService.UploadFile(imageData));
         }
     }
 }
