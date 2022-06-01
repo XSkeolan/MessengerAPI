@@ -33,10 +33,11 @@ namespace MessengerAPI.Controllers
             Chat chat = new Chat
             {
                 Name = request.Name,
-                PhotoId = null,
+                PhotoId = request.PhotoId,
                 DateCreated = DateTime.UtcNow,
                 DefaultUserTypeId = request.DefaultUserTypeId
             };
+
             await _chatService.CreateChatAsync(chat);
 
             await _chatService.InviteUserAsync(chat.Id, chat.CreatorId);
@@ -44,11 +45,13 @@ namespace MessengerAPI.Controllers
 
             ChatResponse response = new ChatResponse
             {
-                ChatId = chat.Id,
+                Id = chat.Id,
                 Name = chat.Name,
+                CountUsers = 1,
+                CreatorId = chat.CreatorId
             };
 
-            return Created($"api/private/chat?id={response.ChatId}", response);
+            return Created($"api/private/chat?id={response.Id}", response);
         }
 
         [HttpGet("getChat")]
@@ -60,9 +63,10 @@ namespace MessengerAPI.Controllers
                 Chat chat = await _chatService.GetChatAsync(id);
                 ChatResponse chatResponse = new ChatResponse
                 {
-                    ChatId = chat.Id,
+                    Id = chat.Id,
                     Name = chat.Name,
                     Photo = chat.PhotoId,
+                    CreatorId = chat.CreatorId,
                     CountUsers = chat.CountUser
                 };
 
@@ -235,11 +239,13 @@ namespace MessengerAPI.Controllers
         {
             try
             {
-                if(!Guid.TryParse(chatId, out Guid chat))
+                if (!Guid.TryParse(chatId, out Guid chat))
                 {
                     return BadRequest(ResponseErrors.INVALID_FIELDS);
                 }
+
                 await _chatService.JoinAsync(chat);
+
                 return Ok();
             }
             catch (Exception ex)
@@ -255,11 +261,13 @@ namespace MessengerAPI.Controllers
         {
             try
             {
-                if(!Guid.TryParse(chatId, out Guid guid))
+                if (!Guid.TryParse(chatId, out Guid guid))
                 {
                     return BadRequest(ResponseErrors.INVALID_FIELDS);
                 }
+
                 await _chatService.LeaveAsync(guid);
+
                 return Ok();
             }
             catch (Exception ex)
@@ -279,6 +287,7 @@ namespace MessengerAPI.Controllers
                 {
                     return BadRequest(ResponseErrors.INVALID_FIELDS);
                 }
+
                 ChatLink channelLink = new ChatLink
                 {
                     GroupId = request.ChannelId,
@@ -286,6 +295,7 @@ namespace MessengerAPI.Controllers
                     IsOneTime = request.IsOneTime
                 };
                 await _chatService.CreateInvitationLinkAsync(channelLink);
+
                 return Ok(new InvitationLinkResponse
                 {
                     Id = channelLink.Id,
@@ -315,9 +325,9 @@ namespace MessengerAPI.Controllers
         }
 
         [HttpGet]
-        [AllowAnonymous]
-        [Route("/api/public/channels/joinFromLink")]
-        public async Task<IActionResult> GetChannelFromLink(string token)
+        [Authorize]
+        [Route("joinFromLink")]
+        public async Task<IActionResult> GetChatFromLink(string token)
         {
             if (string.IsNullOrWhiteSpace(token))
             {
@@ -327,13 +337,15 @@ namespace MessengerAPI.Controllers
             try
             {
                 Chat chat = await _chatService.JoinByLinkAsync(token);
-                ChannelResponse channelResponse = new ChannelResponse
+
+                ChatResponse channelResponse = new ChatResponse
                 {
                     Id = chat.Id,
                     CreatorId = chat.CreatorId,
                     Name = chat.Name,
                     Description = chat.Description
                 };
+
                 return Ok(channelResponse);
             }
             catch (Exception ex)

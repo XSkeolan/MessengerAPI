@@ -10,9 +10,5 @@
         /// Сообщение в ответ
         /// </summary>
         public string ReplyMessage { get; set; }
-        /// <summary>
-        /// Вложения к сообщению. Не обязательны
-        /// </summary>
-        public IEnumerable<byte[]>? Attachments { get; set; }
     }
 }

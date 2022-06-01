@@ -6,6 +6,5 @@ namespace MessengerAPI.Interfaces
     {
         Task<IEnumerable<Message>> GetMessagesByDestination(Guid destinationId);
         Task<Message?> GetLastMessage(Guid destinationId);
-        //Task<Message> GetLastInChatAsync(Guid chatId);
     }
 }

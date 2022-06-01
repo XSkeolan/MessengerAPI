@@ -91,10 +91,6 @@ namespace MessengerAPI.Repositories
             return await Execute(async (conn) =>
             {
                 var result = conditions.Build();
-                foreach (var item in result.Args.Values)
-                {
-                    Console.WriteLine(item);
-                }
 
                 IEnumerable<TEntity> f = await conn.QueryAsync<TEntity>($"SELECT * FROM {TableName} WHERE {result.Query}", result.Args);
                 return f;

@@ -5,7 +5,7 @@
         /// <summary>
         /// Идентификатор нового чата
         /// </summary>
-        public Guid ChatId { get; set; }
+        public Guid Id { get; set; }
         /// <summary>
         /// Название чата
         /// </summary>
@@ -14,6 +14,10 @@
         /// Описание чата
         /// </summary>
         public string? Description { get; set; }
+        /// <summary>
+        /// Идентификатор создателя чата
+        /// </summary>
+        public Guid CreatorId { get; set; }
         /// <summary>
         /// Фотография чата
         /// </summary>

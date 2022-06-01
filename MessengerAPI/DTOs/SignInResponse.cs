@@ -2,6 +2,7 @@
 {
     public class SignInResponse
     {
+        public Guid UserId { get; set; }
         /// <summary>
         /// Токен авторизации
         /// </summary>

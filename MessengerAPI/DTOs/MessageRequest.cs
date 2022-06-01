@@ -11,8 +11,8 @@
         /// </summary>
         public Guid Destination { get; set; }
         /// <summary>
-        /// Файлы приложенные к сообщению
+        /// Приложенные файлы к сообщению
         /// </summary>
-        public IFormFile Attachment { get; set; }
+        public IFormFileCollection Files { get; set; }
     }
 }

@@ -20,7 +20,6 @@ namespace MessengerAPI.Repositories
                 cond.EqualOperation("code", codeHash, EqualOperations.Equal),
                 cond.EqualOperation("isused", false, EqualOperations.Equal)),
                 cond.EqualOperation("isdeleted", false, EqualOperations.Equal));
-
             return (await GetByConditions(cond)).Any();
         }
 

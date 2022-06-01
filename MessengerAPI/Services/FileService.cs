@@ -11,20 +11,24 @@ namespace MessengerAPI.Services
             _fileRepository = fileRepository;
         }
 
-        public async Task<Guid> UploadFile(byte[] byteFile)
+        public async Task<Guid> UploadFile(IFormFile byteFile)
         {
-            var client = new HttpClient()
+            if (byteFile.Length == 0)
             {
-                BaseAddress = new Uri("http://localhost:5037/")
-            };
+                throw new ArgumentException(ResponseErrors.FILE_IS_EMPTY);
+            }
 
-            var response = await client.PostAsync("api/Upload/public/remoteFile", new ByteArrayContent(byteFile));
-            string filename = await response.Content.ReadAsStringAsync();
+            var filePath = Path.Combine("D:\\Image", Path.GetRandomFileName());
+
+            using (var stream = File.Create(filePath))
+            {
+                await byteFile.CopyToAsync(stream);
+            }
 
             Models.File file = new Models.File
             {
                 Server = "http://localhost:5037/",
-                Path = filename
+                Path = filePath
             };
 
             await _fileRepository.CreateAsync(_fileRepository.EntityToDictionary(file));

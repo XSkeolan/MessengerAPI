@@ -2,6 +2,6 @@
 {
     public interface IFileService
     {
-        Task<Guid> UploadFile(byte[] byteFile);
+        Task<Guid> UploadFile(IFormFile byteFile);
     }
 }

@@ -31,12 +31,16 @@ namespace MessengerAPI.Controllers
             {
                 User? user = await _userService.GetUser(id);
 
-                return Ok(new BaseUserResponse
+                return Ok(new UserFullResponse
                 {
                     Id = id,
                     Name = user.Name,
                     Surname = user.Surname,
-                    Nickname = user.Nickname
+                    Nickname = user.Nickname,
+                    Status = user.Status,
+                    Email = user.Email,
+                    IsConfirmed = user.IsConfirmed,
+                    Phonenumber = user.Phonenumber
                 });
             }
             catch (InvalidOperationException ex)
@@ -108,6 +112,7 @@ namespace MessengerAPI.Controllers
             }
 
             await _userService.DeleteUser(reason);
+            await _userService.SignOut();
 
             return Ok();
         }
@@ -177,6 +182,7 @@ namespace MessengerAPI.Controllers
 
                 return Ok(new SignInResponse
                 {
+                    UserId = session.UserId,
                     Expiries = _userService.SessionExpires,
                     Token = await _tokenService.CreateSessionToken(session.Id)
                 });

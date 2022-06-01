@@ -10,9 +10,5 @@
         /// Измененный текст
         /// </summary>
         public string ModifiedText { get; set; }
-        /// <summary>
-        /// Измененные вложения
-        /// </summary>
-        public IEnumerable<byte[]>? ModifiedAttachment { get; set; }
     }
 }

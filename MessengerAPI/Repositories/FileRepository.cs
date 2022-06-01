@@ -7,6 +7,5 @@ namespace MessengerAPI.Repositories
     public class FileRepository : BaseRepository<Models.File>, IFileRepository
     {
         public FileRepository(IOptions<Connections> options) : base(options) { }
-
     }
 }

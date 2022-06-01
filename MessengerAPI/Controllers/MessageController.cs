@@ -13,7 +13,7 @@ namespace MessengerAPI.Controllers
         private readonly IMessageService _messageService;
         private readonly IChatService _chatService;
 
-        public MessageController(IMessageService messageService, IChatService chatService)
+        public MessageController(IMessageService messageService, IChatService chatService, IFileService fileService)
         {
             _messageService = messageService;
             _chatService = chatService;
@@ -21,24 +21,26 @@ namespace MessengerAPI.Controllers
 
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> SendMessage(MessageRequest request, IFormFileCollection formFiles)
+        public async Task<IActionResult> SendMessage([FromForm] MessageRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Message))
             {
                 return BadRequest(ResponseErrors.EMPTY_MESSAGE);
             }
-            if (request.Attachment != null)
+            if (request.Files.Count > 0)
             {
-                //if(request.Attachment.Count()>5)
-                //{
-                //    return BadRequest(ResponseErrors.COUNT_FILES_VERY_LONG);
-                //}
-                //if (request.Attachment.All(file => file.Length == 0))
-                //{
-                //    return BadRequest(ResponseErrors.FILE_IS_EMPTY);
-                //}
+                if (request.Files.Count > 5)
+                {
+                    return BadRequest(ResponseErrors.COUNT_FILES_VERY_LONG);
+                }
 
-
+                foreach (var file in request.Files)
+                {
+                    if (file.Length > 5 * 1024 * 1024)
+                    {
+                        return BadRequest(ResponseErrors.FILE_MAX_SIZE);
+                    }
+                }
             }
 
             try
@@ -46,10 +48,19 @@ namespace MessengerAPI.Controllers
                 Message message = new Message
                 {
                     Destination = request.Destination,
-                    Text = request.Message
+                    Text = request.Message,
                 };
 
                 await _messageService.SendMessageAsync(message);
+
+                foreach (var file in request.Files)
+                {
+                    if (file.Length > 0)
+                    {
+                        await _messageService.SendAttachment(message.Id, file);
+                    }
+                }
+
                 return Created($"api/private/messages?id={message.Id}", null);
             }
             catch (ArgumentException ex)
@@ -61,26 +72,28 @@ namespace MessengerAPI.Controllers
         [HttpGet]
         [Authorize]
         [Route("getHistory")]
-        public async Task<IActionResult> GetHistory(Guid chatId, DateTime? dateStart, DateTime? dateEnd)
+        public async Task<IActionResult> GetHistory(Guid chatId, DateTime dateStart, DateTime dateEnd)
         {
-            if(!(dateStart.HasValue && dateEnd.HasValue))
-            {
-                return BadRequest(ResponseErrors.INVALID_FIELDS);
-            }
-            if(dateStart>=dateEnd)
+            if (dateStart >= dateEnd)
             {
                 return BadRequest(ResponseErrors.INVALID_FIELDS);
             }
 
             IEnumerable<Message> messages = await _messageService.GetHistoryAsync(chatId, dateStart, dateEnd);
-            return Ok(messages.Select(message => new MessageResponse 
+            List<MessageResponse> responses = new List<MessageResponse>();
+            foreach (Message message in messages)
             {
-                MessageId = message.Id,
-                Message = message.Text,
-                Date = message.DateSend,
-                FromId = message.FromWhom,
-                IsPinned = message.IsPinned,
-            }));
+                responses.Add(new MessageResponse
+                {
+                    MessageId = message.Id,
+                    Message = message.Text,
+                    Date = message.DateSend,
+                    FromId = message.FromWhom,
+                    IsPinned = message.IsPinned,
+                    Attachment = await _messageService.GetMessageAttachments(message.Id)
+                });
+            }
+            return Ok(responses);
         }
 
         [HttpGet]
@@ -98,11 +111,11 @@ namespace MessengerAPI.Controllers
             {
                 dialogs = await _chatService.GetDialogsAsync(offsetId, count);
             }
-            catch(ArgumentNullException ex)
+            catch (ArgumentNullException ex)
             {
                 return BadRequest(ex.Message);
             }
-            
+
             IEnumerable<Message?> lastMessages = await Task.WhenAll(dialogs.Select(async (dialog) =>
             {
                 return await _messageService.GetLastMessageAsync(dialog.Id);
@@ -152,7 +165,7 @@ namespace MessengerAPI.Controllers
                 await _chatService.GetChatAsync(request.ChatId);
                 await _messageService.GetMessageAsync(request.MessageId);
             }
-            catch(ArgumentException ex)
+            catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
             }
@@ -200,7 +213,7 @@ namespace MessengerAPI.Controllers
             {
                 await _messageService.SendMessageAsync(message);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
@@ -214,9 +227,19 @@ namespace MessengerAPI.Controllers
         {
             try
             {
-                return Ok(await _messageService.GetMessageAsync(messageId));
+                Message message = await _messageService.GetMessageAsync(messageId);
+                IEnumerable<byte[]> attachments = await _messageService.GetMessageAttachments(messageId);
+                return Ok(new MessageResponse
+                {
+                    FromId = message.FromWhom,
+                    MessageId = message.Id,
+                    Date = message.DateSend,
+                    IsPinned = message.IsPinned,
+                    Message = message.Text,
+                    Attachment = attachments
+                });
             }
-            catch(ArgumentException ex)
+            catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
             }
@@ -226,11 +249,16 @@ namespace MessengerAPI.Controllers
         [Authorize]
         public async Task<IActionResult> EditMessage(EditMessageRequest request)
         {
+            if (string.IsNullOrWhiteSpace(request.ModifiedText))
+            {
+                return BadRequest(ResponseErrors.EMPTY_MESSAGE);
+            }
+
             try
             {
                 await _messageService.EditMessageAsync(request.EditableMessageId, request.ModifiedText);
             }
-            catch(InvalidOperationException ex)
+            catch (InvalidOperationException ex)
             {
                 return BadRequest(ex.Message);
             }
@@ -246,7 +274,7 @@ namespace MessengerAPI.Controllers
             {
                 await _messageService.GetMessageAsync(messageId);
             }
-            catch(ArgumentException ex)
+            catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
             }
@@ -259,7 +287,7 @@ namespace MessengerAPI.Controllers
             {
                 return BadRequest(ex.Message);
             }
-            
+
             return Ok();
         }
     }

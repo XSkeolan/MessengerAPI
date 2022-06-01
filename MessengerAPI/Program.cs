@@ -57,10 +57,10 @@ builder.Services.AddTransient<IUserTypeRepository, UserTypeRepository>();
 
 builder.Services.AddTransient<IMessageRepository, MessageRepository>();
 builder.Services.AddTransient<IMessageService, MessageService>();
+builder.Services.AddTransient<IMessageFileRepository, MessageFileRepository>();
 
 builder.Services.AddTransient<IUserService, UserService>();
 builder.Services.AddTransient<ILinkService, LinkService>();
-builder.Services.AddTransient<ILinkRepository, LinkRepository>();
 builder.Services.AddTransient<IConfirmationCodeRepository, ConfirmationCodeRepository>();
 
 builder.Services.AddTransient<IFileRepository, FileRepository>();

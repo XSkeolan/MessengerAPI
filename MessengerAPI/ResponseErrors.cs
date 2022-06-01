@@ -71,5 +71,8 @@ namespace MessengerAPI
 
         public const string UNAUTHORIZE = "Unauthorize! To access this resource, sign in to the system(use signIn method)";
         public const string INVALID_ROLE_FOR_OPENATION = "You have invalid role for this operation under this user";
+
+        public const string FILE_MAX_SIZE = "One of the files exceeds the maximum allowed size";
+        public const string FILES_MAX_COUNT = "The number of attachments exceeded the maximum allowed";
     }
 }

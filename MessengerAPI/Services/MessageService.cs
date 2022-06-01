@@ -11,18 +11,24 @@ namespace MessengerAPI.Services
         private readonly IChatRepository _chatRepository;
         private readonly IUserChatRepository _userChatRepository;
         private readonly IUserTypeRepository _userTypeRepository;
+        private readonly IFileRepository _fileRepository;
+        private readonly IMessageFileRepository _messageFileRepository;
         private readonly IServiceContext _serviceContext;
 
-        public MessageService(IMessageRepository messages, 
-            IChatRepository chatRepository, 
+        public MessageService(IMessageRepository messages,
+            IChatRepository chatRepository,
             IUserChatRepository userChatRepository,
             IUserTypeRepository userTypeRepository,
+            IFileRepository fileRepository,
+            IMessageFileRepository messageFileRepository,
             IServiceContext serviceContext)
         {
             _messageRepository = messages;
             _chatRepository = chatRepository;
             _userChatRepository = userChatRepository;
             _userTypeRepository = userTypeRepository;
+            _fileRepository = fileRepository;
+            _messageFileRepository = messageFileRepository;
             _serviceContext = serviceContext;
         }
 
@@ -51,19 +57,64 @@ namespace MessengerAPI.Services
                 throw new ArgumentException(ResponseErrors.DESTINATION_NOT_FOUND);
             }
 
-            if(await _userChatRepository.GetByChatAndUserAsync(message.Destination, _serviceContext.UserId) == null)
+            if (await _userChatRepository.GetByChatAndUserAsync(message.Destination, _serviceContext.UserId) == null)
             {
                 throw new ArgumentException(ResponseErrors.USER_NOT_PARTICIPANT);
             }
-            
-            // true - нет вложений
-            if (string.IsNullOrWhiteSpace(message.Text) && true && !message.OriginalMessageId.HasValue)
+
+            if (string.IsNullOrWhiteSpace(message.Text) && !message.OriginalMessageId.HasValue)
             {
                 throw new InvalidOperationException(ResponseErrors.EMPTY_MESSAGE);
             }
 
             message.FromWhom = _serviceContext.UserId;
             await _messageRepository.CreateAsync(_messageRepository.EntityToDictionary(message));
+        }
+
+        public async Task<Models.File> SendAttachment(Guid messageId, IFormFile file)
+        {
+            if (file.Length == 0)
+            {
+                throw new ArgumentException(ResponseErrors.FILE_IS_EMPTY);
+            }
+
+            var filePath = Path.Combine("D:\\Image", Path.GetRandomFileName());
+
+            using (var stream = System.IO.File.Create(filePath))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            Models.File newFile = new Models.File
+            {
+                Server = "http://localhost:5037/",
+                Path = filePath
+            };
+
+            await _fileRepository.CreateAsync(_fileRepository.EntityToDictionary(newFile));
+            MessageFile messageFile = new MessageFile
+            {
+                MessageId = messageId,
+                FileId = newFile.Id
+            };
+            await _messageFileRepository.CreateAsync(_messageFileRepository.EntityToDictionary(messageFile));
+            return newFile;
+        }
+
+        public async Task<IEnumerable<byte[]>> GetMessageAttachments(Guid messageId)
+        {
+            List<Guid> filesId = new List<Guid>((await _messageFileRepository.GetMessageFiles(messageId)).Select(x => x.FileId));
+            List<byte[]> files = new List<byte[]>();
+            foreach (Guid fileId in filesId)
+            {
+                Models.File file = await _fileRepository.GetAsync(fileId);
+                using (var memoryStream = new MemoryStream())
+                {
+                    System.IO.File.OpenRead(file.Path).CopyTo(memoryStream);
+                    files.Add(memoryStream.ToArray());
+                }
+            }
+            return files;
         }
 
         public async Task<Message> GetMessageAsync(Guid messageId)
@@ -104,28 +155,7 @@ namespace MessengerAPI.Services
             await _messageRepository.UpdateAsync(messageId, typeof(Message).GetProperty("IsPinned").GetCustomAttribute<ColumnAttribute>().Name, status);
         }
 
-        public async Task<IEnumerable<Message>> GetHistoryAsync(Guid chatId, DateTime? dateStart, DateTime? dateEnd)
-        {
-            if(!(dateStart.HasValue && dateEnd.HasValue))
-            {
-                throw new ArgumentException("Должны быть заполнены оба параметра");
-            }
-
-            Chat? chat = await _chatRepository.GetAsync(chatId);
-            if(chat == null)
-            {
-                throw new ArgumentException(ResponseErrors.CHAT_NOT_FOUND);
-            }
-
-            IEnumerable<Message> chatMessages = await _messageRepository.GetMessagesByDestination(chatId);
-            if(dateStart.HasValue)
-            {
-                chatMessages.Where(msg => msg.DateSend >= dateStart && msg.DateSend <= dateEnd);
-            }
-            return chatMessages;
-        }
-
-        public async Task DeleteHistoryAsync(Guid chatId, Guid? maxMessageId)
+        public async Task<IEnumerable<Message>> GetHistoryAsync(Guid chatId, DateTime dateStart, DateTime dateEnd)
         {
             Chat? chat = await _chatRepository.GetAsync(chatId);
             if (chat == null)
@@ -133,22 +163,16 @@ namespace MessengerAPI.Services
                 throw new ArgumentException(ResponseErrors.CHAT_NOT_FOUND);
             }
 
-            IEnumerable<Message> messageToDelete = await _messageRepository.GetMessagesByDestination(chatId);
-            if (maxMessageId.HasValue)
-            {
-                messageToDelete = messageToDelete.OrderBy(msg => msg.DateSend).TakeWhile(msg => msg.Id != maxMessageId);
-            }
+            IEnumerable<Message> chatMessages = (await _messageRepository.GetMessagesByDestination(chatId))
+                .Where(msg => msg.DateSend >= dateStart && msg.DateSend <= dateEnd);
 
-            foreach (Message message in messageToDelete)
-            {
-                await _messageRepository.DeleteAsync(message.Id);
-            }
+            return chatMessages;
         }
 
         public async Task EditMessageAsync(Guid messageId, string newText)
         {
             Message message = await GetMessageAsync(messageId);
-            if(message.FromWhom != _serviceContext.UserId)
+            if (message.FromWhom != _serviceContext.UserId)
             {
                 throw new InvalidOperationException(ResponseErrors.USER_NOT_SENDER);
             }
@@ -163,12 +187,12 @@ namespace MessengerAPI.Services
 
         public async Task<IEnumerable<Message>> FindMessagesAsync(Guid chatId, string subtext)
         {
-            return (await _messageRepository.GetMessagesByDestination(chatId)).Where(x=> x.Text.Contains(subtext));
+            return (await _messageRepository.GetMessagesByDestination(chatId)).Where(x => x.Text.Contains(subtext));
         }
 
         public async Task<Message?> GetLastMessageAsync(Guid chatId)
         {
-            if(await _chatRepository.GetAsync(chatId) == null)
+            if (await _chatRepository.GetAsync(chatId) == null)
             {
                 throw new ArgumentException(ResponseErrors.CHAT_NOT_FOUND);
             }

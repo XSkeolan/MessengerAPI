@@ -172,7 +172,23 @@ namespace MessengerAPI.Services
                 await _channelLinkRepository.DeleteAsync(channelLinkId);
             }
 
-            return await _chatRepository.GetAsync(channelLink.GroupId);
+            Chat? chat = await _chatRepository.GetAsync(channelLink.GroupId);
+            UserGroup? userGroup = await _userChatRepository.GetByChatAndUserAsync(chat.Id, _serviceContext.UserId);
+            if (userGroup != null)
+            {
+                throw new InvalidOperationException(ResponseErrors.USER_ALREADY_IN_CHAT);
+            }
+
+            userGroup = new UserGroup
+            {
+                GroupId = channelLink.GroupId,
+                UserId = _serviceContext.UserId,
+                UserTypeId = chat.DefaultUserTypeId
+            };
+
+            await _userChatRepository.CreateAsync(_userChatRepository.EntityToDictionary(userGroup));
+
+            return chat;
         }
 
         public async Task SetRoleAsync(Guid chatId, Guid userId, Guid roleId)
@@ -193,6 +209,10 @@ namespace MessengerAPI.Services
 
             UserType? userType = await _userTypesRepository.GetAsync(userGroup.UserTypeId);
             UserGroup? currentUser = await _userChatRepository.GetByChatAndUserAsync(chatId, _serviceContext.UserId);
+            if (currentUser == null)
+            {
+                throw new InvalidOperationException(ResponseErrors.USER_NOT_PARTICIPANT);
+            }
             UserType? currnetUserType = await _userTypesRepository.GetAsync(currentUser.UserTypeId);
 
             if (currnetUserType.PriorityLevel <= userType.PriorityLevel && (await _userChatRepository.GetUserChatsAsync(chatId)).Any())

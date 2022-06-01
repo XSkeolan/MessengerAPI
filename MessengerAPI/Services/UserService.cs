@@ -19,9 +19,6 @@ namespace MessengerAPI.Services
         private readonly ISessionRepository _sessionRepository;
         private readonly IConfirmationCodeRepository _codeRepository;
 
-        private readonly string _issuer;
-        private readonly string _audience;
-        private readonly string _key;
         private readonly int _sessionExpires;
         private readonly int _emailLinkExpires;
 
@@ -45,9 +42,6 @@ namespace MessengerAPI.Services
             _sessionRepository = sessionRepository;
             _codeRepository = codeRepository;
 
-            _issuer = options.Value.Issuer;
-            _audience = options.Value.Audience;
-            _key = options.Value.Key;
             _sessionExpires = options.Value.SessionExpires;
             _emailLinkExpires = options.Value.EmailLinkExpires;
 
