@@ -81,7 +81,7 @@ namespace MessengerAPI.Services
 
             int countUsers = (await _userChatRepository.GetChatUsersAsync(chatId)).Count();
 
-            if (countUsers > 0 && !(await CurrentUserHaveRights(chatId, Permissions.INVITE_USER)))
+            if (countUsers > 0 && !await CurrentUserHaveRights(chatId, Permissions.INVITE_USER))
             {
                 throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
             }
@@ -280,13 +280,6 @@ namespace MessengerAPI.Services
             return chat;
         }
 
-        public async Task<IEnumerable<Chat>> FindChatByName(string chatName)
-        {
-            IEnumerable<Chat> chats = await _chatRepository.GetChatsByNameAsync(chatName);
-            UserType userType = await _userTypesRepository.GetByTypeNameAsync("subscriber");
-            return chats.Where(chat => chat.DefaultUserTypeId == userType.Id);
-        }
-
         public async Task EditNameAsync(Guid chatId, string name)
         {
             await GetChatAsync(chatId);
@@ -442,22 +435,6 @@ namespace MessengerAPI.Services
             }
 
             await _chatRepository.UpdateAsync(chatId, "photoid", fileId);
-        }
-
-        private async Task<byte[]> GetPhoto(Guid chatId)
-        {
-            Chat? chat = await _chatRepository.GetAsync(chatId);
-            if (chat.PhotoId.HasValue)
-            {
-                Models.File photo = await _fileRepository.GetAsync(chat.PhotoId.Value);
-
-                var client = new HttpClient();
-                return await client.GetByteArrayAsync(photo.Server + photo.Path);
-            }
-            else
-            {
-                return Array.Empty<byte>();
-            }
         }
 
         public async Task<UserType> GetAdminRoleAsync()

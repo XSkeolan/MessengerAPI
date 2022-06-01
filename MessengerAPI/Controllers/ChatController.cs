@@ -237,16 +237,11 @@ namespace MessengerAPI.Controllers
         [HttpPost]
         [Authorize]
         [Route("join")]
-        public async Task<IActionResult> Join(string chatId)
+        public async Task<IActionResult> Join(Guid chatId)
         {
             try
             {
-                if (!Guid.TryParse(chatId, out Guid chat))
-                {
-                    return BadRequest(ResponseErrors.INVALID_FIELDS);
-                }
-
-                await _chatService.JoinAsync(chat);
+                await _chatService.JoinAsync(chatId);
 
                 return Ok();
             }
@@ -259,16 +254,11 @@ namespace MessengerAPI.Controllers
         [HttpPost]
         [Authorize]
         [Route("leave")]
-        public async Task<IActionResult> Leave([FromBody] string chatId)
+        public async Task<IActionResult> Leave(Guid chatId)
         {
             try
             {
-                if (!Guid.TryParse(chatId, out Guid guid))
-                {
-                    return BadRequest(ResponseErrors.INVALID_FIELDS);
-                }
-
-                await _chatService.LeaveAsync(guid);
+                await _chatService.LeaveAsync(chatId);
 
                 return Ok();
             }

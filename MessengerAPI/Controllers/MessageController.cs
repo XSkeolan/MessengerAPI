@@ -290,5 +290,45 @@ namespace MessengerAPI.Controllers
 
             return Ok();
         }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> FindMessagesByText(Guid chatId, string text)
+        {
+            List<Message> messages = new List<Message>(await _messageService.FindMessagesAsync(chatId, text));
+            List<MessageResponse> messageResponses = new List<MessageResponse>();
+
+            foreach (Message message in messages)
+            {
+                messageResponses.Add(new MessageResponse
+                {
+                    MessageId = message.Id,
+                    Date = message.DateSend,
+                    FromId = message.FromWhom,
+                    Message = message.Text,
+                    IsPinned = message.IsPinned,
+                    Attachment = await _messageService.GetMessageAttachments(message.Id)
+                });
+            }
+
+            return Ok(messageResponses);
+        }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> ReadMessage([FromBody] Guid messageId)
+        {
+            try
+            {
+                await _messageService.GetMessageAsync(messageId);
+                await _messageService.ReadMessageAsync(messageId);
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }

@@ -29,7 +29,6 @@ namespace MessengerAPI.Interfaces
         Task<IEnumerable<UserType>> GetRolesAsync();
         Task SetRoleAsync(Guid chatId, Guid userId, Guid roleId);
 
-        Task<IEnumerable<Chat>> FindChatByName(string chatName);
         Task<IEnumerable<User>> SearchUsersAsync(Guid chatId, string nickname);
         Task<UserType> GetAdminRoleAsync();
     }
